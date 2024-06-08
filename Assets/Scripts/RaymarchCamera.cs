@@ -2,11 +2,11 @@ using UnityEngine;
 
 [RequireComponent(typeof(Camera))]
 [ExecuteInEditMode]
-public class RaymarchCamera : MonoBehaviour
+public class RaymarchCamera : SceneViewFilter
 {
     [SerializeField] private Shader _shader;
 
-    public Material _raymarchMaterial
+    private Material RaymarchMaterial
     {
         get
         {
@@ -19,8 +19,8 @@ public class RaymarchCamera : MonoBehaviour
         }
     }
     private Material _raymarchMat;
-    
-    public Camera _camera
+
+    private Camera Camera
     {
         get
         {
@@ -32,32 +32,44 @@ public class RaymarchCamera : MonoBehaviour
         }
     }
     private Camera _cam;
+    private static readonly int MainTex = Shader.PropertyToID("_MainTex");
+    private static readonly int CamTL = Shader.PropertyToID("_camTL");
+    private static readonly int CamTR = Shader.PropertyToID("_camTR");
+    private static readonly int CamBL = Shader.PropertyToID("_camBL");
+    private static readonly int CamBR = Shader.PropertyToID("_camBR");
+    private static readonly int CamPos = Shader.PropertyToID("_camPos");
+    private static readonly int CamToWorldMatrix = Shader.PropertyToID("_camToWorldMatrix");
 
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
-        if(!_raymarchMaterial)
+        if(!RaymarchMaterial)
         {
             Graphics.Blit(source, destination);
             return;
         }
 
-        var fc = GetCameraFrustumCorners(_camera);
-        _raymarchMaterial.SetVector("_camTL", fc.topLeft);
-        _raymarchMaterial.SetVector("_camTR", fc.topRight);
-        _raymarchMaterial.SetVector("_camBL", fc.bottomLeft);
-        _raymarchMaterial.SetVector("_camBR", fc.bottomRight);
-        _raymarchMaterial.SetVector("_camPos", _camera.transform.position);
-        _raymarchMaterial.SetMatrix("_camToWorldMatrix", _camera.cameraToWorldMatrix);
+        var fc = GetCameraFrustumCorners(Camera);
+        RaymarchMaterial.SetVector(CamTL, fc.topLeft);
+        RaymarchMaterial.SetVector(CamTR, fc.topRight);
+        RaymarchMaterial.SetVector(CamBL, fc.bottomLeft);
+        RaymarchMaterial.SetVector(CamBR, fc.bottomRight);
+        RaymarchMaterial.SetVector(CamPos, Camera.transform.position);
+        RaymarchMaterial.SetMatrix(CamToWorldMatrix, Camera.cameraToWorldMatrix);
         
         RenderTexture.active = destination;
+        RaymarchMaterial.SetTexture(MainTex, source);
         //push current used mvp matrix to allow as to draw fullscreen quad
         GL.PushMatrix();
         GL.LoadOrtho();
-        _raymarchMaterial.SetPass(0);
+        RaymarchMaterial.SetPass(0);
         GL.Begin(GL.QUADS);
+        GL.MultiTexCoord2(0, 0.0f, 0.0f);
         GL.Vertex3(0.0f, 0.0f, 0.0f);
+        GL.MultiTexCoord2(0, 1.0f, 0.0f);
         GL.Vertex3(1.0f, 0.0f, 0.0f);
+        GL.MultiTexCoord2(0, 1.0f, 1.0f);
         GL.Vertex3(1.0f, 1.0f, 0.0f);
+        GL.MultiTexCoord2(0, 0.0f, 1.0f);
         GL.Vertex3(0.0f, 1.0f, 0.0f);
         GL.End();
         //get back the old mvp matrix

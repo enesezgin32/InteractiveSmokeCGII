@@ -21,6 +21,7 @@ Shader "Hidden/RaymarchShader"
             #include "UnityCG.cginc"
             
             sampler2D _MainTex;
+            sampler2D _CameraDepthTexture;
             uniform float4 _camPos;
             uniform float4 _camTL;
             uniform float4 _camTR;
@@ -39,7 +40,7 @@ Shader "Hidden/RaymarchShader"
             {
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
-                float3 ray : TEXCOORD1;
+                float3 nearPlanePoint : TEXCOORD1;
             };
 
             v2f vert (appdata v)
@@ -48,38 +49,51 @@ Shader "Hidden/RaymarchShader"
                 
                 float3 rightVec = _camTR.xyz - _camTL.xyz;
                 float3 upVec = _camTL.xyz - _camBL.xyz;
-                o.ray = rightVec * v.vertex.x + upVec * v.vertex.y + _camBL;
-                o.ray = mul(_camToWorldMatrix, float4(o.ray, 1));
+                o.nearPlanePoint = rightVec * v.vertex.x + upVec * v.vertex.y + _camBL;
+                o.nearPlanePoint /= abs(o.nearPlanePoint.z);
+                o.nearPlanePoint = mul(_camToWorldMatrix, float4(o.nearPlanePoint, 1));
                 
                 v.vertex.z = 0;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = v.uv;
+                o.uv = v.uv.xy;
                 return o;
             }
 
-            fixed4 raymarching(float3 ro, float3 rd)
+            float sdSphere(float3 pos, float rad, float3 p)
             {
-                //Sphere marching on the origin with radius 1
-                float3 spherePos = float3(0, 0, 0);
-                float sphereRadius = 1.0;
-                float3 oc = ro - spherePos;
-                float b = dot(oc, rd);
-                float c = dot(oc, oc) - sphereRadius * sphereRadius;
-                float discriminant = b * b - c;
-                if (discriminant > 0)
+                return length(p - pos) - rad;
+            }
+            float scene(float3 p)
+            {
+                return sdSphere(float3(0, 0, 0), 1, p);
+            }
+            fixed4 raymarching(float3 ro, float3 rd, v2f i)
+            {
+                fixed4 res = fixed4(tex2D(_MainTex, i.uv).xyz, 1);
+                float depth = LinearEyeDepth(tex2D(_CameraDepthTexture, i.uv).r);
+                depth *= length(i.nearPlanePoint - _camPos.xyz);
+                float t = 0.0;
+                for (int i = 0; i < 256; i++)
                 {
-                    float t = -b - sqrt(discriminant);
-                    if (t > 0)
+                    if (t >= depth)
                     {
-                        return fixed4(1, 1, 1, 1);
+                        break;
                     }
+                    float3 p = ro + rd * t;
+                    float d = scene(p);
+                    if (d < 0.001)
+                    {
+                        res = fixed4(1, 0, 0, 1);
+                        break;
+                    }
+                    t += d;
                 }
-                return fixed4(0, 0, 0, 1);
+                return res;
             }
             fixed4 frag (v2f i) : SV_Target
             {
-                float3 dir = normalize(i.ray - _camPos.xyz);
-                return raymarching(_camPos.xyz, dir);
+                float3 dir = normalize(i.nearPlanePoint - _camPos.xyz);
+                return raymarching(_camPos.xyz, dir, i);
             }
             ENDCG
         }
