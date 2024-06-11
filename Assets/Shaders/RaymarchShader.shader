@@ -65,35 +65,53 @@ Shader "Hidden/RaymarchShader"
             }
             float scene(float3 p)
             {
-                return sdSphere(float3(0, 0, 0), 1, p);
+                return min(sdSphere(float3(0, 0, 0), 1, p), sdSphere(float3(0, 1.5, 0), 1, p));
             }
-            fixed4 raymarching(float3 ro, float3 rd, v2f i)
+            float insideObjectDist(float3 ro, float3 rd)
             {
-                fixed4 res = fixed4(tex2D(_MainTex, i.uv).xyz, 1);
-                float depth = LinearEyeDepth(tex2D(_CameraDepthTexture, i.uv).r);
-                depth *= length(i.nearPlanePoint - _camPos.xyz);
+                float totalDist = 0.0;
+                float stepDist = 0.01;
+                float3 p = ro;
+                do
+                {
+                    p += rd * stepDist;
+                    totalDist += stepDist;
+                }
+                while (scene(p) < 0);
+                return totalDist;
+            }
+            float2 raymarchDist(float3 ro, float3 rd, float depth)
+            {
                 float t = 0.0;
                 for (int i = 0; i < 256; i++)
                 {
                     if (t >= depth)
                     {
-                        break;
+                        return float2(-1, 0);
                     }
                     float3 p = ro + rd * t;
                     float d = scene(p);
                     if (d < 0.001)
                     {
-                        res = fixed4(1, 0, 0, 1);
-                        break;
+                        return float2(t, insideObjectDist(p, rd));
                     }
                     t += d;
                 }
-                return res;
+                return float2(-1,0);
             }
             fixed4 frag (v2f i) : SV_Target
             {
+                fixed4 res = fixed4(tex2D(_MainTex, i.uv).xyz, 1);
+                float depth = LinearEyeDepth(tex2D(_CameraDepthTexture, i.uv).r);
+                depth *= length(i.nearPlanePoint - _camPos.xyz);
+                
                 float3 dir = normalize(i.nearPlanePoint - _camPos.xyz);
-                return raymarching(_camPos.xyz, dir, i);
+                float2 raymarchResult = raymarchDist(_camPos.xyz, dir, depth);
+                float surfaceDist = raymarchResult.x;
+                float insideDist = raymarchResult.y;
+                if(surfaceDist == -1)
+                    return res;
+                return lerp(res * exp(-pow(insideDist, 2.0)), fixed4(1, 0, 0, 1), 0.3);
             }
             ENDCG
         }
