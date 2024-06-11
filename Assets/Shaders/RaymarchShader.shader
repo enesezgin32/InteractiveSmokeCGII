@@ -58,14 +58,18 @@ Shader "Hidden/RaymarchShader"
                 o.uv = v.uv.xy;
                 return o;
             }
-
+            float opSmoothUnion( float d1, float d2, float k )
+            {
+                float h = clamp( 0.5 + 0.5*(d2-d1)/k, 0.0, 1.0 );
+                return lerp( d2, d1, h ) - k*h*(1.0-h);
+            }
             float sdSphere(float3 pos, float rad, float3 p)
             {
                 return length(p - pos) - rad;
             }
             float scene(float3 p)
             {
-                return min(sdSphere(float3(0, 0, 0), 1, p), sdSphere(float3(0, 1.5, 0), 1, p));
+                return opSmoothUnion(sdSphere(float3(0, 0, 0), 1, p), sdSphere(float3(0, 1.5, 0), 1, p), 0.7);
             }
             float insideObjectDist(float3 ro, float3 rd)
             {
