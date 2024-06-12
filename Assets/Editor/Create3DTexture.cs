@@ -1,46 +1,95 @@
-using UnityEditor;
 using UnityEngine;
+using UnityEditor;
 
-public class Create3DTexture : MonoBehaviour
+public class WorleyNoise3DGenerator : EditorWindow
 {
-    [MenuItem("CreateExamples/3DTexture")]
-    static void CreateTexture3D()
+    private int textureSize = 16;
+    private float scale = 1.0f;
+
+    [MenuItem("Tools/Worley Noise 3D Generator")]
+    public static void ShowWindow()
     {
-        // Configure the texture
-        int size = 32;
-        TextureFormat format = TextureFormat.RGBA32;
-        TextureWrapMode wrapMode =  TextureWrapMode.Clamp;
+        GetWindow<WorleyNoise3DGenerator>("Worley Noise 3D Generator");
+    }
 
-        // Create the texture and apply the configuration
-        Texture3D texture = new Texture3D(size, size, size, format, false);
-        texture.wrapMode = wrapMode;
+    private void OnGUI()
+    {
+        GUILayout.Label("Worley Noise 3D Texture Generator", EditorStyles.boldLabel);
+        textureSize = EditorGUILayout.IntField("Texture Size", textureSize);
+        scale = EditorGUILayout.FloatField("Scale", scale);
 
-        // Create a 3-dimensional array to store color data
+        if (GUILayout.Button("Generate and Save Texture3D"))
+        {
+            Texture3D texture = GenerateWorleyNoise3D(textureSize, scale);
+            SaveTexture3DAsset(texture);
+        }
+    }
+
+    private Texture3D GenerateWorleyNoise3D(int size, float scale)
+    {
+        Texture3D texture = new Texture3D(size, size, size, TextureFormat.RGBA32, false);
         Color[] colors = new Color[size * size * size];
 
-        // Populate the array so that the x, y, and z values of the texture will map to red, blue, and green colors
-        float inverseResolution = 1.0f / (size - 1.0f);
-        for (int z = 0; z < size; z++)
+        for (int x = 0; x < size; x++)
         {
-            int zOffset = z * size * size;
             for (int y = 0; y < size; y++)
             {
-                int yOffset = y * size;
-                for (int x = 0; x < size; x++)
+                for (int z = 0; z < size; z++)
                 {
-                    colors[x + yOffset + zOffset] = new Color(x * inverseResolution,
-                        y * inverseResolution, z * inverseResolution, 1.0f);
+                    float nx = x / (float)size * scale;
+                    float ny = y / (float)size * scale;
+                    float nz = z / (float)size * scale;
+
+                    float distance = WorleyNoise(nx, ny, nz);
+                    Color color = new Color(distance, distance, distance, 1.0f);
+                    colors[x + size * (y + size * z)] = color;
                 }
             }
         }
 
-        // Copy the color values to the texture
         texture.SetPixels(colors);
+        texture.Apply();
+        return texture;
+    }
 
-        // Apply the changes to the texture and upload the updated texture to the GPU
-        texture.Apply();        
+    private float WorleyNoise(float x, float y, float z)
+    {
+        int K = 2; // Number of cells to consider
+        float minDist = float.MaxValue;
 
-        // Save the texture to your Unity Project
-        AssetDatabase.CreateAsset(texture, "Assets/Example3DTexture.asset");
+        for (int i = -K; i <= K; i++)
+        {
+            for (int j = -K; j <= K; j++)
+            {
+                for (int k = -K; k <= K; k++)
+                {
+                    Vector3 cell = new Vector3(Mathf.Floor(x) + i, Mathf.Floor(y) + j, Mathf.Floor(z) + k);
+                    Vector3 cellOffset = new Vector3(Random(cell.x), Random(cell.y), Random(cell.z));
+
+                    Vector3 point = cell + cellOffset;
+                    float dist = Vector3.Distance(new Vector3(x, y, z), point);
+                    if (dist < minDist)
+                    {
+                        minDist = dist;
+                    }
+                }
+            }
+        }
+        return minDist;
+    }
+
+    private float Random(float x)
+    {
+        return Mathf.Sin(x * 127.1f + 311.7f) * 43758.5453f % 1.0f;
+    }
+
+    private void SaveTexture3DAsset(Texture3D texture)
+    {
+        string path = EditorUtility.SaveFilePanelInProject("Save Texture3D", "NewWorleyNoiseTexture", "asset", "Save Texture3D");
+        if (path.Length > 0)
+        {
+            AssetDatabase.CreateAsset(texture, path);
+            AssetDatabase.SaveAssets();
+        }
     }
 }
