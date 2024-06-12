@@ -5,14 +5,14 @@ public class WorleyNoise3DTexture : MonoBehaviour
 {
 
     public static int worlyNoiseFeaturePointCount2D = 256;
-    public static int worlyNoiseFeaturePointCount3D = 64;
-    public static float featurePointMultiplier = 3f;
+    public static int worlyNoiseFeaturePointCount3D = 4;
+    public static float featurePointMultiplier = 1;
 
     [MenuItem("CreateExamples2/3DNoiseTexture")]
     static void CreateTexture3D()
     {
         // Configure the texture
-        int size = 128;
+        int size = 64;
         TextureFormat format = TextureFormat.RGBA32;
         TextureWrapMode wrapMode = TextureWrapMode.Clamp;
 
@@ -55,7 +55,7 @@ public class WorleyNoise3DTexture : MonoBehaviour
         texture.Apply();
 
         // Save the texture to your Unity Project
-        AssetDatabase.CreateAsset(texture, $"Assets/Example3DTextureNoise{worlyNoiseFeaturePointCount3D}_{featurePointMultiplier}.asset");
+        AssetDatabase.CreateAsset(texture, $"Assets/Textures/Example3DTextureNoise{worlyNoiseFeaturePointCount3D}_{featurePointMultiplier}_2.asset");
     }
 
     static float WorleyNoise(float x, float y, float z, Vector3[] featurePoints)
@@ -118,7 +118,7 @@ public class WorleyNoise3DTexture : MonoBehaviour
         texture.Apply();
 
         // Save the texture to your Unity Project
-        AssetDatabase.CreateAsset(texture, $"Assets/Example2DTextureNoise{worlyNoiseFeaturePointCount2D}_{featurePointMultiplier}.asset");
+        AssetDatabase.CreateAsset(texture, $"Assets/Textures/Example2DTextureNoise{worlyNoiseFeaturePointCount2D}_{featurePointMultiplier}.asset");
     }
 
 
