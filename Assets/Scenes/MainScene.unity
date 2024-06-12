@@ -364,6 +364,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shader: {fileID: 4800000, guid: b89be5246f9eb45478de29c0f7db9783, type: 3}
+  _volumeTexture: {fileID: 11700000, guid: aaba1adaa492342a8ac1ba6fbae537bd, type: 2}
 --- !u!1 &1690088195
 GameObject:
   m_ObjectHideFlags: 0
@@ -425,7 +426,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 63cbd982a088549a1a40b27ba0237854, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -483,7 +484,7 @@ GameObject:
   - component: {fileID: 2082079916}
   - component: {fileID: 2082079915}
   m_Layer: 0
-  m_Name: w
+  m_Name: cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -530,7 +531,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 63cbd982a088549a1a40b27ba0237854, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

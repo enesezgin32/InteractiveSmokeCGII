@@ -22,13 +22,13 @@ Shader "Hidden/RaymarchShader"
             
             sampler2D _MainTex;
             sampler2D _CameraDepthTexture;
+            sampler3D _VolumeTex;
             uniform float4 _camPos;
             uniform float4 _camTL;
             uniform float4 _camTR;
             uniform float4 _camBL;
             uniform float4 _camBR;
             uniform float4x4 _camToWorldMatrix;
-            
 
             struct appdata
             {
@@ -71,17 +71,18 @@ Shader "Hidden/RaymarchShader"
             {
                 return opSmoothUnion(sdSphere(float3(0, 0, 0), 1, p), sdSphere(float3(0, 1.5, 0), 1, p), 0.7);
             }
-            float insideObjectDist(float3 ro, float3 rd)
+            float density(float3 ro, float3 rd)
             {
                 float totalDist = 0.0;
                 float stepDist = 0.01;
                 float3 p = ro;
+                int maxIT = 96;
                 do
                 {
                     p += rd * stepDist;
-                    totalDist += stepDist;
+                    totalDist += stepDist * tex3D(_VolumeTex, p * 0.5).r * 4;
                 }
-                while (scene(p) < 0);
+                while (scene(p) < 0 && maxIT-- > 0);
                 return totalDist;
             }
             float2 raymarchDist(float3 ro, float3 rd, float depth)
@@ -91,17 +92,17 @@ Shader "Hidden/RaymarchShader"
                 {
                     if (t >= depth)
                     {
-                        return float2(-1, 0);
+                        return -1;
                     }
                     float3 p = ro + rd * t;
                     float d = scene(p);
                     if (d < 0.001)
                     {
-                        return float2(t, insideObjectDist(p, rd));
+                        return t;
                     }
                     t += d;
                 }
-                return float2(-1,0);
+                return -1;
             }
             fixed4 frag (v2f i) : SV_Target
             {
@@ -110,12 +111,12 @@ Shader "Hidden/RaymarchShader"
                 depth *= length(i.nearPlanePoint - _camPos.xyz);
                 
                 float3 dir = normalize(i.nearPlanePoint - _camPos.xyz);
-                float2 raymarchResult = raymarchDist(_camPos.xyz, dir, depth);
-                float surfaceDist = raymarchResult.x;
-                float insideDist = raymarchResult.y;
+                float surfaceDist = raymarchDist(_camPos.xyz, dir, depth);
+                
+                float insideDist = density(_camPos.xyz + dir * surfaceDist, dir);
                 if(surfaceDist == -1)
                     return res;
-                return lerp(res * exp(-pow(insideDist, 2.0)), fixed4(1, 0, 0, 1), 0.3);
+                return res * exp(-insideDist);
             }
             ENDCG
         }

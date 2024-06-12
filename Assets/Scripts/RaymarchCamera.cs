@@ -5,6 +5,7 @@ using UnityEngine;
 public class RaymarchCamera : SceneViewFilter
 {
     [SerializeField] private Shader _shader;
+    [SerializeField] private Texture3D _volumeTexture;
 
     private Material RaymarchMaterial
     {
@@ -39,6 +40,7 @@ public class RaymarchCamera : SceneViewFilter
     private static readonly int CamBR = Shader.PropertyToID("_camBR");
     private static readonly int CamPos = Shader.PropertyToID("_camPos");
     private static readonly int CamToWorldMatrix = Shader.PropertyToID("_camToWorldMatrix");
+    private static readonly int VolumeTex = Shader.PropertyToID("_VolumeTex");
 
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
@@ -55,6 +57,7 @@ public class RaymarchCamera : SceneViewFilter
         RaymarchMaterial.SetVector(CamBR, fc.bottomRight);
         RaymarchMaterial.SetVector(CamPos, Camera.transform.position);
         RaymarchMaterial.SetMatrix(CamToWorldMatrix, Camera.cameraToWorldMatrix);
+        RaymarchMaterial.SetTexture(VolumeTex, _volumeTexture);
         
         RenderTexture.active = destination;
         RaymarchMaterial.SetTexture(MainTex, source);
