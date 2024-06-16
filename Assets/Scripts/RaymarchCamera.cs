@@ -50,6 +50,7 @@ public class RaymarchCamera : SceneViewFilter
             return;
         }
 
+        //set shader variables
         var fc = GetCameraFrustumCorners(Camera);
         RaymarchMaterial.SetVector(CamTL, fc.topLeft);
         RaymarchMaterial.SetVector(CamTR, fc.topRight);
@@ -59,12 +60,15 @@ public class RaymarchCamera : SceneViewFilter
         RaymarchMaterial.SetMatrix(CamToWorldMatrix, Camera.cameraToWorldMatrix);
         RaymarchMaterial.SetTexture(VolumeTex, _volumeTexture);
         
+        //set render target and draw a fullscreen quad
         RenderTexture.active = destination;
         RaymarchMaterial.SetTexture(MainTex, source);
         //push current used mvp matrix to allow as to draw fullscreen quad
         GL.PushMatrix();
         GL.LoadOrtho();
+        //Active the shader pass numbered 0 (we only have zero)
         RaymarchMaterial.SetPass(0);
+        //draw a quad
         GL.Begin(GL.QUADS);
         GL.MultiTexCoord2(0, 0.0f, 0.0f);
         GL.Vertex3(0.0f, 0.0f, 0.0f);

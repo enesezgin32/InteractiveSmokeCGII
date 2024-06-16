@@ -43,10 +43,11 @@ Shader "Hidden/RaymarchShader"
                 float3 nearPlanePoint : TEXCOORD1;
             };
 
+            //Vertex Shader
             v2f vert (appdata v)
             {
+                //for every vertex, calculate its position relative to camera
                 v2f o;
-                
                 float3 rightVec = _camTR.xyz - _camTL.xyz;
                 float3 upVec = _camTL.xyz - _camBL.xyz;
                 o.nearPlanePoint = rightVec * v.vertex.x + upVec * v.vertex.y + _camBL;
@@ -58,6 +59,7 @@ Shader "Hidden/RaymarchShader"
                 o.uv = v.uv.xy;
                 return o;
             }
+// SDF FUCNTIONS
             float opSmoothUnion( float d1, float d2, float k )
             {
                 float h = clamp( 0.5 + 0.5*(d2-d1)/k, 0.0, 1.0 );
@@ -72,12 +74,14 @@ Shader "Hidden/RaymarchShader"
               float3 q = abs(pos - p) - b;
               return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
             }
+// GET SCENES CLOSEST POINT
             float scene(float3 p)
             {
                 float x = opSmoothUnion(sdSphere(float3(0, 0, 0), 1, p), sdSphere(float3(0, 1.5, 0), 1, p), 0.7);
                 
                 return opSmoothUnion(x, sdBox(float3(3, 0, 0), float3(1, 1, 1), p), 0.1);
             }
+//CALCULATE DENSITY OF VOLUME FOR THE RAY
             float density(float3 ro, float3 rd)
             {
                 float totalDist = 0.0;
@@ -94,9 +98,9 @@ Shader "Hidden/RaymarchShader"
                 int sampleCount = 40;
                 p = ro;
                 float res = 0.0f;
+                float stepLen = totalDist/sampleCount;
                 for(int i=0;i<sampleCount;i++)
                 {
-                    float stepLen = totalDist/sampleCount;
                     p += rd * stepLen;
                     res+= stepLen * tex3D(_VolumeTex, p * 0.25 + float3( _Time.y * 0.1f, 0, 0)).r;
                 }
