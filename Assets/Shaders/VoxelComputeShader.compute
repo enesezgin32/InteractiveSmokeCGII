@@ -1,0 +1,35 @@
+#pragma kernel CSMain
+
+struct Voxel
+{
+    float3 position;
+    float4 color;
+};
+
+RWStructuredBuffer<Voxel> voxels;
+float resolution;
+float3 centerPosition;
+
+float rand(float2 co)
+{
+    return frac(sin(dot(co.xy, float2(12.9898, 78.233))) * 43758.5453);
+}
+
+[numthreads(10, 10, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint index = id.x * 10 + id.y; // Ensure index calculation matches grid size
+    if (index < resolution * resolution)
+    {
+        Voxel voxel;
+        voxel.position = float3(id.x, 0.5, id.y) + centerPosition; // Position relative to center
+        voxel.color = rand(voxel.position.xz);
+
+        float r = rand(float2(id.x + centerPosition.x, id.y + centerPosition.y));
+        float g = rand(float2(id.y + centerPosition.y, id.x + centerPosition.x));
+        float b = rand(float2(id.x + centerPosition.x, id.x + centerPosition.x));
+
+        voxel.color = float4(r, g, b, 1.0);
+        voxels[index] = voxel;
+    }
+}
