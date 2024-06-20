@@ -13,17 +13,33 @@ public class Voxelizer : MonoBehaviour
     public int gridSize = 10;
     public float voxelSize = 1f;
 
+    public int smokeWidth = 10;
+
     private ComputeBuffer voxelBuffer;
+
     private ComputeBuffer argsBuffer;
     private ComputeBuffer meshVertexBuffer;
     private ComputeBuffer meshIndexBuffer;
     private ComputeBuffer mapVoxelInfoBuffer;
-    private Voxel[] voxels;
+    private Voxel[] mapVoxels;
+
+    private ComputeBuffer smokeVoxelBuffer;
+    private Voxel[] smokeVoxels;
 
     private Bounds bounds;
 
-    public int[] occupiedplaces;
+    private int[] mapVoxelInfo;
     [SerializeField] private Transform staticObjects;
+
+
+    int voxelizeKernel;
+    int createSmokeKernel;
+
+
+    private float smokeRad = 5.0f;
+    private bool isSmokeExpanding = false;
+    private float expandingStartTime = 0f;
+    private Vector3 smokeCenter = Vector3.zero;
 
 
     public struct Voxel
@@ -52,13 +68,16 @@ public class Voxelizer : MonoBehaviour
 
     void Start()
     {
-        occupiedplaces = new int[gridSize* gridSize * gridSize];
+        
+
+        voxelizeKernel = voxelComputeShader.FindKernel("CSVoxelizeMap");
+        createSmokeKernel = voxelComputeShader.FindKernel("CSCreateSmokeVoxels");
 
         InitializeVoxels();
         
         /*ComputeVoxels(Vector3.zero);*/ // Initialize voxels' positions in the compute shader
         VoxelizeMesh();
-        Debug.Log(voxelMesh.bounds);
+
 
     }
 
@@ -72,30 +91,74 @@ public class Voxelizer : MonoBehaviour
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 Vector3 hitPoint = hit.point;
-                ComputeVoxels(hitPoint);
+                smokeCenter = hitPoint;
+                expandingStartTime = Time.time;
+                isSmokeExpanding = true;
+
+                //optimizasyon bukucu bunu silmek lazim
+                VoxelizeMesh();
             }
         }
 
-        VoxelRenderMaterial.SetBuffer("voxels", voxelBuffer);
+
+        if (isSmokeExpanding)
+        {
+            float val = EaseFunction(Time.time - expandingStartTime);
+            voxelComputeShader.SetFloat("smokeRad", smokeRad * val);
+            CreateSmoke(smokeCenter);
+
+            if (val >= 1)
+            {
+                smokeCenter = Vector3.zero;
+                isSmokeExpanding = false;
+                expandingStartTime = 0;
+            }
+            
+        }
+
+
+
+
+        if(Input.GetKeyDown(KeyCode.X))
+        {
+            int countOnes = mapVoxelInfo.AsParallel().Count(value => value == 1);
+            Debug.Log($"NUMBER OF OCCUPIED VOXEL IS {countOnes}");
+
+            int countTwos = mapVoxelInfo.AsParallel().Count(value => value == 2);
+            Debug.Log($"NUMBER OF SMOKED VOXEL IS {countTwos}");
+        }
+
+        
+        VoxelRenderMaterial.SetBuffer("voxels", smokeVoxelBuffer);
+        //VoxelRenderMaterial.SetBuffer("voxels", voxelBuffer);
+
         VoxelRenderMaterial.SetFloat("_VoxelSize", voxelSize);
-        Debug.Log(voxelMesh.bounds);
         Graphics.DrawMeshInstancedIndirect(voxelMesh, 0, VoxelRenderMaterial, bounds, argsBuffer);
+
+
+        
     }
 
     private void InitializeVoxels()
     {
-        voxels = new Voxel[gridSize * gridSize * gridSize];
+        mapVoxels = new Voxel[gridSize * gridSize * gridSize];
+        smokeVoxels = new Voxel[smokeWidth * smokeWidth * smokeWidth];
+        mapVoxelInfo = new int[gridSize * gridSize * gridSize];
+
         int colorSize = sizeof(float) * 4;
         int vector3Size = sizeof(float) * 3;
         int totalVoxelDataSize = colorSize + vector3Size;
 
-        voxelBuffer = new ComputeBuffer(voxels.Length, totalVoxelDataSize);
-        mapVoxelInfoBuffer = new ComputeBuffer(voxels.Length, sizeof(int));
+        voxelBuffer = new ComputeBuffer(mapVoxels.Length, totalVoxelDataSize);
+        smokeVoxelBuffer = new ComputeBuffer(smokeVoxels.Length, totalVoxelDataSize);
+
+        mapVoxelInfoBuffer = new ComputeBuffer(mapVoxelInfo.Length, sizeof(int));
+        
 
         // Initialize the argument buffer
         uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
         args[0] = (uint)voxelMesh.GetIndexCount(0);
-        args[1] = (uint)voxels.Length;
+        args[1] = (uint)mapVoxels.Length;
         args[2] = (uint)voxelMesh.GetIndexStart(0);
         args[3] = (uint)voxelMesh.GetBaseVertex(0);
         argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
@@ -148,42 +211,73 @@ public class Voxelizer : MonoBehaviour
 
     }
 
-    private void ComputeVoxels(Vector3 center)
+    private void CreateSmoke(Vector3 center)
     {
-        voxelComputeShader.SetBuffer(0, "voxels", voxelBuffer);
-        voxelComputeShader.SetInt("resolution", gridSize);
-        voxelComputeShader.SetVector("centerPosition", center);
-        voxelComputeShader.SetInts("gridSize", new int[] { gridSize, gridSize, gridSize });
-        voxelComputeShader.Dispatch(0, Mathf.CeilToInt(gridSize / 10.0f), Mathf.CeilToInt(gridSize / 10.0f), Mathf.CeilToInt(gridSize / 1.0f));
 
-        voxelBuffer.GetData(voxels);
+        smokeVoxels = new Voxel[smokeWidth * smokeWidth * smokeWidth];
+        mapVoxelInfo = new int[gridSize * gridSize * gridSize];
+
+        mapVoxelInfoBuffer.SetData(mapVoxelInfo);
+        smokeVoxelBuffer.SetData(smokeVoxels);
+
+        voxelComputeShader.SetVector("smokeCenter", center);
+        voxelComputeShader.SetInt("smokeWidth", smokeWidth);
+        voxelComputeShader.SetInt("smokeHeight", smokeWidth);
+        
+
+        voxelComputeShader.SetBuffer(createSmokeKernel, "smokeVoxels", smokeVoxelBuffer);
+        voxelComputeShader.SetBuffer(createSmokeKernel, "mapVoxelInfo", mapVoxelInfoBuffer);
+
+        //voxelComputeShader.Dispatch(createSmokeKernel, Mathf.CeilToInt(smokeWidth / 10.0f), Mathf.CeilToInt(smokeWidth / 10.0f), 1);
+        voxelComputeShader.Dispatch(createSmokeKernel, 1, 1, 1);
+
+        smokeVoxelBuffer.GetData(smokeVoxels);
+        mapVoxelInfoBuffer.GetData(mapVoxelInfo);
     }
 
     private void VoxelizeMesh()
     {
+        
         // Set buffers and parameters for the compute shader
+        
         voxelComputeShader.SetVector("centerPosition", new Vector3(0,0, 0));
-        voxelComputeShader.SetBuffer(0, "voxels", voxelBuffer);
-        voxelComputeShader.SetBuffer(0, "vertices", meshVertexBuffer);
-        voxelComputeShader.SetBuffer(0, "indices", meshIndexBuffer);
-        voxelComputeShader.SetFloat("voxelSize", voxelSize);
-        voxelComputeShader.SetInts("gridSize", new int[] { gridSize, gridSize, gridSize });
-        voxelComputeShader.Dispatch(0, Mathf.CeilToInt(gridSize / 10.0f), Mathf.CeilToInt(gridSize / 10.0f), 1);
+        voxelComputeShader.SetBuffer(voxelizeKernel, "mapVoxels", voxelBuffer);
+        voxelComputeShader.SetBuffer(voxelizeKernel, "mapVoxelInfo", mapVoxelInfoBuffer);
 
-        voxelComputeShader.SetBuffer(1, "voxels", voxelBuffer);
-        voxelComputeShader.SetBuffer(1, "meshVertices", meshVertexBuffer);
-        voxelComputeShader.SetBuffer(1, "meshIndices", meshIndexBuffer);
-        voxelComputeShader.SetBuffer(1, "mapVoxelInfo", mapVoxelInfoBuffer);
+        voxelComputeShader.SetBuffer(voxelizeKernel, "meshVertices", meshVertexBuffer);
+        voxelComputeShader.SetBuffer(voxelizeKernel, "meshIndices", meshIndexBuffer);
+
         voxelComputeShader.SetInt("meshIndiceCount", meshIndexBuffer.count);
         Debug.Log($"{meshIndexBuffer.count} -> meshIndexBuffer.count");
 
         voxelComputeShader.SetFloat("voxelSize", voxelSize);
         voxelComputeShader.SetInts("gridSize", new int[] { gridSize, gridSize, gridSize });
-        voxelComputeShader.Dispatch(1, Mathf.CeilToInt(gridSize / 10.0f), Mathf.CeilToInt(gridSize / 10.0f), Mathf.CeilToInt(gridSize / 10.0f));
+        voxelComputeShader.Dispatch(voxelizeKernel, Mathf.CeilToInt(gridSize / 10.0f), Mathf.CeilToInt(gridSize / 10.0f), Mathf.CeilToInt(gridSize / 10.0f));
 
-        mapVoxelInfoBuffer.GetData(occupiedplaces);
-        voxelBuffer.GetData(voxels);
+        mapVoxelInfoBuffer.GetData(mapVoxelInfo);
+        voxelBuffer.GetData(mapVoxels);
     }
+
+
+    private float EaseFunction(float time)
+    {
+        
+        time = Mathf.Clamp01(time);
+
+        // Ease-in-out quadratic function
+        if (time < 0.5f)
+        {
+            // Ease in
+            return time * time;
+        }
+        else
+        {
+            // Ease out
+            return time * time;
+        }
+    }
+
+
 
 
     void OnDestroy()

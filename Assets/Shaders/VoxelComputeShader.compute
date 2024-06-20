@@ -1,5 +1,5 @@
-#pragma kernel CSMain
-#pragma kernel CSVoxelizeObjects
+#pragma kernel CSVoxelizeMap
+#pragma kernel CSCreateSmokeVoxels
 
 struct Voxel
 {
@@ -9,21 +9,31 @@ struct Voxel
 
 
 
-RWStructuredBuffer<int> mapVoxelInfo;
+RWStructuredBuffer<int> mapVoxelInfo; //tum harita
 
-RWStructuredBuffer<Voxel> voxels;
+RWStructuredBuffer<Voxel> mapVoxels; // test amacli
 
-StructuredBuffer<float3> meshVertices;
+StructuredBuffer<float3> meshVertices; //static objects' vertices
 
-StructuredBuffer<uint> meshIndices;
+StructuredBuffer<uint> meshIndices; //static objects' indices
 
-uint meshIndiceCount;
+uint meshIndiceCount; //static objects' indice count
 
-float3 centerPosition;
+float3 centerPosition; //map center 
 
-float voxelSize;
+float voxelSize; //size of each voxel 
 
-uint3 gridSize;
+uint3 gridSize; //size of map to voxelize
+
+float smokeRad; // radius of smoke
+uint smokeWidth; //width of smoke
+uint smokeHeight; //height of smoke
+float3 smokeCenter; //center of smoke to spawn
+
+RWStructuredBuffer<Voxel> smokeVoxels; //smoke voxels
+
+RWStructuredBuffer<uint4> stackForFill;
+
 
 
 struct Triangle
@@ -44,6 +54,59 @@ float rand(float2 co)
 {
     return frac(sin(dot(co.xy, float2(12.9898, 78.233))) * 43758.5453);
 }
+
+uint3 indexToCord(uint index)
+{
+    uint z = index / (gridSize.x * gridSize.y);
+    uint y = (index % (gridSize.x * gridSize.y)) / gridSize.x;
+    uint x = index % gridSize.x;
+    
+    return uint3(x, y, z);
+}
+
+uint cordToIndex(uint3 cord)
+{
+    return cord.x + gridSize.x * (cord.y + gridSize.y * cord.z);
+}
+
+uint posToIndex(float3 position)
+{
+    float3 centerOffset = centerPosition - float3(voxelSize * gridSize.x * 0.5f, 0, voxelSize * gridSize.z * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
+    uint3 id = (position - centerOffset) / voxelSize; // find x y z in float values
+    uint index = ((uint) id.x + gridSize.x * ((uint) id.y + gridSize.y * (uint) id.z));
+    return index;
+}
+
+uint3 posToCord(float3 position)
+{
+    float3 centerOffset = centerPosition - float3(voxelSize * gridSize.x * 0.5f, 0, voxelSize * gridSize.z * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
+    uint3 id = (position - centerOffset) / voxelSize; // find x y z in float values
+    uint index = ((uint) id.x + gridSize.x * ((uint) id.y + gridSize.y * (uint) id.z));
+    return indexToCord(index);
+}
+
+float3 indexToPos(uint index)
+{
+    uint3 id = indexToCord(index);
+
+    float3 centerOffset = centerPosition - float3(voxelSize * gridSize.x * 0.5f, 0, voxelSize * gridSize.z * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
+    float3 position = float3(id.x, id.y, id.z) * voxelSize + centerOffset;
+
+    return position;
+}
+
+float3 cordToPos(uint3 cord)
+{
+    float3 centerOffset = centerPosition - float3(voxelSize * gridSize.x * 0.5f, 0, voxelSize * gridSize.z * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
+    float3 position = float3(cord.x, cord.y, cord.z) * voxelSize + centerOffset;
+    return position;
+}
+
+
+
+
+
+
 bool TriangleIntersectsAABBSat(float3 v0, float3 v1, float3 v2, float3 aabbExtents, float3 axis)
 {
     float p0 = dot(v0, axis);
@@ -117,71 +180,44 @@ bool TriangleIntersectsAABB(float3 v0, float3 v1, float3 v2, float3 boxMin, floa
 
 
 
-
-//bool IsVerticeInsideCube(float3 v0, float3 boxMin, float3 boxMax)
+//[numthreads(10, 10, 1)]
+//void CSMain(uint3 id : SV_DispatchThreadID)
 //{
-//    if (v0.x > boxMin.x && v0.x < boxMax.x &&
-//        v0.y > boxMin.y && v0.y < boxMax.y &&
-//        v0.z > boxMin.z && v0.z < boxMax.z)
+//    uint index = id.x * 10 + id.y; // Ensure index calculation matches grid size
+//    if (index < gridSize.x * gridSize.y * gridSize.z)
 //    {
-//        return true;
+//        Voxel voxel;
+//        voxel.position = float3(id.x, 0.5, id.y) + centerPosition; // Position relative to center
+//        voxel.color = rand(voxel.position.xz);
+
+//        float r = rand(float2(id.x + centerPosition.x, id.y + centerPosition.y));
+//        float g = rand(float2(id.y + centerPosition.y, id.x + centerPosition.x));
+//        float b = rand(float2(id.x + centerPosition.x, id.x + centerPosition.x));
+
+//        voxel.color = float4(r, g, b, 1.0);
+//        voxels[index] = voxel;
 //    }
-//    return false;
-
 //}
-
-//bool TriangleIntersects(float3 v0, float3 v1, float3 v2, float3 boxMin, float3 boxMax)
-//{
-
-//    if (IsVerticeInsideCube(v0, boxMin, boxMax) || IsVerticeInsideCube(v1, boxMin, boxMax) || IsVerticeInsideCube(v2, boxMin, boxMax))
-//    {
-//        return true;
-//    }
-//    return false;
-    
-//}
-
-[numthreads(10, 10, 1)]
-void CSMain(uint3 id : SV_DispatchThreadID)
-{
-    uint index = id.x * 10 + id.y; // Ensure index calculation matches grid size
-    if (index < gridSize.x * gridSize.y * gridSize.z)
-    {
-        Voxel voxel;
-        voxel.position = float3(id.x, 0.5, id.y) + centerPosition; // Position relative to center
-        voxel.color = rand(voxel.position.xz);
-
-        float r = rand(float2(id.x + centerPosition.x, id.y + centerPosition.y));
-        float g = rand(float2(id.y + centerPosition.y, id.x + centerPosition.x));
-        float b = rand(float2(id.x + centerPosition.x, id.x + centerPosition.x));
-
-        voxel.color = float4(r, g, b, 1.0);
-        voxels[index] = voxel;
-    }
-}
-
-
-
-
 
 [numthreads(10, 10, 10)]
-void CSVoxelizeObjects(uint3 id : SV_DispatchThreadID)
+void CSVoxelizeMap(uint3 id : SV_DispatchThreadID)
 {
 
-    uint index = id.x + gridSize.x * (id.y + gridSize.y * id.z);
+    uint index = cordToIndex(id);
     if (index >= gridSize.x * gridSize.y * gridSize.z)
         return;
 
     Voxel voxel;
-    float3 centerOffset = centerPosition - float3(voxelSize * gridSize.x * 0.5f, 0, voxelSize * gridSize.z * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
-    voxel.position = float3(id.x, id.y, id.z) * voxelSize + centerOffset;
     
+    voxel.position = cordToPos(id);
+    float3 position = cordToPos(id);
     
-    float3 voxelMin = voxel.position - voxelSize * 0.5;
-    float3 voxelMax = voxel.position + voxelSize * 0.5;
+    float3 voxelMin = position - voxelSize * 0.5;
+    float3 voxelMax = position + voxelSize * 0.5;
     mapVoxelInfo[index] = 0;
+    
     voxel.color = float4(0, 0, 1, 0.05f);
-
+    
     // Iterate over triangles in the mesh
     for (uint i = 0; i < meshIndiceCount; i += 3)
     {
@@ -198,9 +234,129 @@ void CSVoxelizeObjects(uint3 id : SV_DispatchThreadID)
         }
     }
 
-    voxels[index] = voxel;
+ 
+    mapVoxels[index] = voxel;
     
 }
 
+//[numthreads(128, 1, 1)]
+//void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
+//{
+//    uint index = id.x + smokeWidth * id.y; // Ensure index calculation matches grid size
+//    if (index >= smokeHeight * smokeWidth)
+//        return;
+
+    
+//    float3 centerOffset = smokeCenter-float3(voxelSize * smokeWidth * 0.5f, 0, voxelSize * smokeWidth * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
+//    float3 position = float3(id.x, 0, id.y) * voxelSize + centerOffset;
+//    Voxel voxel;
+//    voxel.position = position;
+    
+//    uint mapVoxelIndex = posToIndex(voxel.position);
+//    uint smokeVoxelIndex = index;
+
+
+
+
+//    // Randomize smoke voxel color for visual variety
+//    float r = rand(float2(id.x + centerPosition.x, id.y + centerPosition.y));
+//    float g = rand(float2(id.y + centerPosition.y, id.x + centerPosition.x));
+//    float b = rand(float2(id.x + centerPosition.x, id.x + centerPosition.x));
+
+//    voxel.color = float4(r, g, b, 1); 
+
+    
+//    if (mapVoxelInfo[mapVoxelIndex] == 1)
+//    {
+//        voxel.color = float4(0, 0, 0, 1);
+//        return;
+//    }
+        
+    
+    
+//    smokeVoxels[smokeVoxelIndex] = voxel;
+//}
+
+#define MAX_STACK_SIZE 1024
+
+[numthreads(1, 1, 1)]
+void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
+{
+    uint index = posToIndex(smokeCenter); // Index in 1D array
+    uint3 cord = indexToCord(index);
+    float3 position = smokeCenter;
+
+    uint smokeCount = 0;
+    // Stack for flood fill algorithm
+    uint4 stack[MAX_STACK_SIZE]; // -> cordinatlar ve step count var
+    uint stackPointer = 0;
+
+    stack[stackPointer++] = uint4(cord,0);
+    
+    
+    Voxel startVoxel;
+    startVoxel.position = indexToPos(index);
+        
+        // Randomize smoke voxel color for visual variety
+    float r = rand(float2(id.x + centerPosition.x, id.y + centerPosition.y));
+    float g = rand(float2(id.y + centerPosition.y, id.x + centerPosition.x));
+    float b = rand(float2(id.x + centerPosition.x, id.x + centerPosition.x));
+
+    startVoxel.color = float4(r, g, b, 1);
+    smokeVoxels[smokeCount] = startVoxel;
+    smokeCount += 1;
+
+    while (stackPointer > 0)
+    {
+        uint3 currentCor = stack[--stackPointer].xyz;
+        uint stepId = stack[stackPointer].w;
+        uint currentIndex = cordToIndex(currentCor);
+        
+        float3 currentPosition = indexToPos(currentIndex);
+
+        // Skip if this voxel is already processed or out of bounds
+        if (length((currentPosition - smokeCenter) / smokeRad) > 1.0f || mapVoxelInfo[currentIndex] != 0 || stepId > 100)
+        {
+            continue;
+        }
+
+        Voxel currentVoxel;
+        currentVoxel.position = currentPosition;
+        
+        // Randomize smoke voxel color for visual variety
+        float r = rand(float2(currentCor.x + centerPosition.x, currentCor.y + centerPosition.y));
+        float g = rand(float2(currentCor.y + centerPosition.y, currentCor.x + centerPosition.x));
+        float b = rand(float2(currentCor.x + centerPosition.x, currentCor.x + centerPosition.x));
+
+        currentVoxel.color = float4(r, g, b, 1);
+        currentVoxel.color = float4(0.2f, 0.2f, 0.2f, 0.5f);
+
+        // Mark this voxel as processed
+        mapVoxelInfo[currentIndex] = 1;
+        smokeVoxels[smokeCount] = currentVoxel;
+        smokeCount += 1;
+
+        // Add neighboring voxels to the stack
+        uint3 neighbors[6] =
+        {
+            uint3(currentCor.x + 1, currentCor.y, currentCor.z),
+            uint3(currentCor.x - 1, currentCor.y, currentCor.z),
+            uint3(currentCor.x, currentCor.y + 1, currentCor.z),
+            uint3(currentCor.x, currentCor.y - 1, currentCor.z),
+            uint3(currentCor.x, currentCor.y, currentCor.z + 1),
+            uint3(currentCor.x, currentCor.y, currentCor.z - 1)
+        };
+
+        for (int i = 0; i < 6; i++)
+        {
+            uint3 neighborId = neighbors[i];
+            // Check bounds
+            if (neighborId.x < gridSize.x && neighborId.y < gridSize.y && neighborId.z < gridSize.z && stackPointer < MAX_STACK_SIZE)
+            {
+                stack[stackPointer++] = uint4(neighborId,stepId+1);
+            }
+        }
+    }
+}
 
 

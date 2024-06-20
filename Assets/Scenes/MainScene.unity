@@ -151,7 +151,7 @@ Transform:
   m_GameObject: {fileID: 14758737}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -2, z: 0}
+  m_LocalPosition: {x: 0, y: -0.51, z: 0}
   m_LocalScale: {x: 20, y: 0.5, z: 20}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -761,9 +761,9 @@ MonoBehaviour:
   voxelRenderShader: {fileID: 4800000, guid: 35040a69e5762e9448832fda9359d2d8, type: 3}
   voxelMaterial: {fileID: 0}
   voxelMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
-  gridSize: 20
-  voxelSize: 1
-  occupiedplaces: 
+  gridSize: 40
+  voxelSize: 0.5
+  smokeWidth: 20
   staticObjects: {fileID: 1978897558}
 --- !u!4 &1996591869
 Transform:
