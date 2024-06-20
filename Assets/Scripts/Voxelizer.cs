@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Voxelizer : MonoBehaviour
@@ -10,13 +11,20 @@ public class Voxelizer : MonoBehaviour
     public Mesh voxelMesh;
 
     public int gridSize = 10;
-    public float voxelSize = 0.5f;
+    public float voxelSize = 1f;
 
     private ComputeBuffer voxelBuffer;
     private ComputeBuffer argsBuffer;
+    private ComputeBuffer meshVertexBuffer;
+    private ComputeBuffer meshIndexBuffer;
+    private ComputeBuffer mapVoxelInfoBuffer;
     private Voxel[] voxels;
 
     private Bounds bounds;
+
+    public int[] occupiedplaces;
+    [SerializeField] private Transform staticObjects;
+
 
     public struct Voxel
     {
@@ -38,42 +46,21 @@ public class Voxelizer : MonoBehaviour
     }
     private Material voxelRenderMaterial;
 
-    private void InitializeVoxels()
-    {
-        voxels = new Voxel[gridSize * gridSize];
-        int colorSize = sizeof(float) * 4;
-        int vector3Size = sizeof(float) * 3;
-        int totalVoxelDataSize = colorSize + vector3Size;
-        voxelBuffer = new ComputeBuffer(voxels.Length, totalVoxelDataSize);
 
-        // Initialize the argument buffer
-        uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
-        args[0] = (uint)voxelMesh.GetIndexCount(0);
-        args[1] = (uint)voxels.Length;
-        args[2] = (uint)voxelMesh.GetIndexStart(0);
-        args[3] = (uint)voxelMesh.GetBaseVertex(0);
-        argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
-        argsBuffer.SetData(args);
 
-        // Set bounds for drawing
-        bounds = new Bounds(Vector3.zero, new Vector3(gridSize, gridSize, gridSize) * voxelSize);
-    }
 
-    private void ComputeVoxels(Vector3 center)
-    {
-        voxelComputeShader.SetBuffer(0, "voxels", voxelBuffer);
-        voxelComputeShader.SetInt("resolution", gridSize);
-        voxelComputeShader.SetVector("centerPosition", center);
-        voxelComputeShader.Dispatch(0, Mathf.CeilToInt(gridSize / 10.0f), Mathf.CeilToInt(gridSize / 10.0f), 1);
-
-        voxelBuffer.GetData(voxels);
-    }
 
     void Start()
     {
+        occupiedplaces = new int[gridSize* gridSize * gridSize];
+
         InitializeVoxels();
-        ComputeVoxels(Vector3.zero); // Initialize voxels' positions in the compute shader
+        
+        /*ComputeVoxels(Vector3.zero);*/ // Initialize voxels' positions in the compute shader
+        VoxelizeMesh();
     }
+
+
 
     void Update()
     {
@@ -92,6 +79,88 @@ public class Voxelizer : MonoBehaviour
 
         Graphics.DrawMeshInstancedIndirect(voxelMesh, 0, VoxelRenderMaterial, bounds, argsBuffer);
     }
+
+    private void InitializeVoxels()
+    {
+        voxels = new Voxel[gridSize * gridSize * gridSize];
+        int colorSize = sizeof(float) * 4;
+        int vector3Size = sizeof(float) * 3;
+        int totalVoxelDataSize = colorSize + vector3Size;
+
+        voxelBuffer = new ComputeBuffer(voxels.Length, totalVoxelDataSize);
+        mapVoxelInfoBuffer = new ComputeBuffer(voxels.Length, sizeof(int));
+
+        // Initialize the argument buffer
+        uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
+        args[0] = (uint)voxelMesh.GetIndexCount(0);
+        args[1] = (uint)voxels.Length;
+        args[2] = (uint)voxelMesh.GetIndexStart(0);
+        args[3] = (uint)voxelMesh.GetBaseVertex(0);
+        argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
+        argsBuffer.SetData(args);
+
+        // Set bounds for drawing
+        bounds = new Bounds(Vector3.zero, new Vector3(gridSize, gridSize, gridSize) * voxelSize);
+
+
+
+        List<Vector3> vertices = new List<Vector3>();
+        List<int> indices = new List<int>();
+        foreach (MeshFilter targetMeshFilter in staticObjects?.GetComponentsInChildren<MeshFilter>())
+        {
+            // Prepare mesh data for compute shader
+            vertices.AddRange(targetMeshFilter.sharedMesh.vertices.ToList());
+            indices.AddRange(targetMeshFilter.sharedMesh.triangles);
+
+
+        }
+        Debug.Log(vertices.Count);
+        Debug.Log(indices.Count);
+        meshVertexBuffer = new ComputeBuffer(vertices.Count, sizeof(float) * 3);
+        meshIndexBuffer = new ComputeBuffer(indices.Count, sizeof(int));
+
+        meshVertexBuffer.SetData(vertices.ToArray());
+        meshIndexBuffer.SetData(indices.ToArray());
+
+
+    }
+
+    private void ComputeVoxels(Vector3 center)
+    {
+        voxelComputeShader.SetBuffer(0, "voxels", voxelBuffer);
+        voxelComputeShader.SetInt("resolution", gridSize);
+        voxelComputeShader.SetVector("centerPosition", center);
+        voxelComputeShader.SetInts("gridSize", new int[] { gridSize, gridSize, gridSize });
+        voxelComputeShader.Dispatch(0, Mathf.CeilToInt(gridSize / 10.0f), Mathf.CeilToInt(gridSize / 10.0f), Mathf.CeilToInt(gridSize / 1.0f));
+
+        voxelBuffer.GetData(voxels);
+    }
+
+    private void VoxelizeMesh()
+    {
+        // Set buffers and parameters for the compute shader
+        voxelComputeShader.SetBuffer(0, "voxels", voxelBuffer);
+        voxelComputeShader.SetBuffer(0, "vertices", meshVertexBuffer);
+        voxelComputeShader.SetBuffer(0, "indices", meshIndexBuffer);
+        voxelComputeShader.SetFloat("voxelSize", voxelSize);
+        voxelComputeShader.SetInts("gridSize", new int[] { gridSize, gridSize, gridSize });
+        voxelComputeShader.Dispatch(0, Mathf.CeilToInt(gridSize / 10.0f), Mathf.CeilToInt(gridSize / 10.0f), 1);
+
+        voxelComputeShader.SetBuffer(1, "voxels", voxelBuffer);
+        voxelComputeShader.SetBuffer(1, "meshVertices", meshVertexBuffer);
+        voxelComputeShader.SetBuffer(1, "meshIndices", meshIndexBuffer);
+        voxelComputeShader.SetBuffer(1, "mapVoxelInfo", mapVoxelInfoBuffer);
+        voxelComputeShader.SetInt("meshIndiceCount", meshIndexBuffer.count);
+        Debug.Log($"{meshIndexBuffer.count} -> meshIndexBuffer.count");
+
+        voxelComputeShader.SetFloat("voxelSize", voxelSize);
+        voxelComputeShader.SetInts("gridSize", new int[] { gridSize, gridSize, gridSize });
+        voxelComputeShader.Dispatch(1, Mathf.CeilToInt(gridSize / 10.0f), Mathf.CeilToInt(gridSize / 10.0f), Mathf.CeilToInt(gridSize / 10.0f));
+
+        mapVoxelInfoBuffer.GetData(occupiedplaces);
+        voxelBuffer.GetData(voxels);
+    }
+
 
     void OnDestroy()
     {
