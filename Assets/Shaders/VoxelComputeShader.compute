@@ -10,25 +10,16 @@ struct Voxel
 
 
 RWStructuredBuffer<int> mapVoxelInfo;
+
 RWStructuredBuffer<Voxel> voxels;
 
-
 StructuredBuffer<float3> meshVertices;
+
 StructuredBuffer<uint> meshIndices;
+
 uint meshIndiceCount;
 
-float3 mapVoxelResolution;
 float3 centerPosition;
-
-
-
-
-float4x4 meshLocalToWorld;
-
-float3 boundsExtent;
-float3 radius;
-
-int maxFillSteps;
 
 float voxelSize;
 
@@ -124,6 +115,32 @@ bool TriangleIntersectsAABB(float3 v0, float3 v1, float3 v2, float3 boxMin, floa
     return true;
 }
 
+
+
+
+//bool IsVerticeInsideCube(float3 v0, float3 boxMin, float3 boxMax)
+//{
+//    if (v0.x > boxMin.x && v0.x < boxMax.x &&
+//        v0.y > boxMin.y && v0.y < boxMax.y &&
+//        v0.z > boxMin.z && v0.z < boxMax.z)
+//    {
+//        return true;
+//    }
+//    return false;
+
+//}
+
+//bool TriangleIntersects(float3 v0, float3 v1, float3 v2, float3 boxMin, float3 boxMax)
+//{
+
+//    if (IsVerticeInsideCube(v0, boxMin, boxMax) || IsVerticeInsideCube(v1, boxMin, boxMax) || IsVerticeInsideCube(v2, boxMin, boxMax))
+//    {
+//        return true;
+//    }
+//    return false;
+    
+//}
+
 [numthreads(10, 10, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID)
 {
@@ -155,15 +172,17 @@ void CSVoxelizeObjects(uint3 id : SV_DispatchThreadID)
     if (index >= gridSize.x * gridSize.y * gridSize.z)
         return;
 
-    Voxel voxel = voxels[id.x];
-    voxel.position = float3(id.x, id.z, id.y) + centerPosition;
+    Voxel voxel;
+    float3 centerOffset = centerPosition - float3(voxelSize * gridSize.x * 0.5f, 0, voxelSize * gridSize.z * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
+    voxel.position = float3(id.x, id.y, id.z) * voxelSize + centerOffset;
     
-    float3 voxelMin = voxel.position - float3(1.0, 1.0, 1.0) / 2;
-    float3 voxelMax = voxel.position + float3(1.0,1.0,1.0) / 2;
+    
+    float3 voxelMin = voxel.position - voxelSize * 0.5;
+    float3 voxelMax = voxel.position + voxelSize * 0.5;
     mapVoxelInfo[index] = 0;
-    voxel.color = float4(0, 0, 1, 1);
+    voxel.color = float4(0, 0, 1, 0.05f);
 
-// Iterate over triangles in the mesh
+    // Iterate over triangles in the mesh
     for (uint i = 0; i < meshIndiceCount; i += 3)
     {
         float3 v0 = meshVertices[meshIndices[i]];

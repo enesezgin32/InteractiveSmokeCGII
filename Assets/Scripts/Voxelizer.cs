@@ -58,6 +58,8 @@ public class Voxelizer : MonoBehaviour
         
         /*ComputeVoxels(Vector3.zero);*/ // Initialize voxels' positions in the compute shader
         VoxelizeMesh();
+        Debug.Log(voxelMesh.bounds);
+
     }
 
 
@@ -76,7 +78,7 @@ public class Voxelizer : MonoBehaviour
 
         VoxelRenderMaterial.SetBuffer("voxels", voxelBuffer);
         VoxelRenderMaterial.SetFloat("_VoxelSize", voxelSize);
-
+        Debug.Log(voxelMesh.bounds);
         Graphics.DrawMeshInstancedIndirect(voxelMesh, 0, VoxelRenderMaterial, bounds, argsBuffer);
     }
 
@@ -106,16 +108,37 @@ public class Voxelizer : MonoBehaviour
 
         List<Vector3> vertices = new List<Vector3>();
         List<int> indices = new List<int>();
-        foreach (MeshFilter targetMeshFilter in staticObjects?.GetComponentsInChildren<MeshFilter>())
+        // Iterate through all MeshFilter components in the staticObjects GameObject
+        foreach (MeshFilter targetMeshFilter in staticObjects.GetComponentsInChildren<MeshFilter>())
         {
-            // Prepare mesh data for compute shader
-            vertices.AddRange(targetMeshFilter.sharedMesh.vertices.ToList());
-            indices.AddRange(targetMeshFilter.sharedMesh.triangles);
+            // Get the sharedMesh of each MeshFilter
+            Mesh mesh = targetMeshFilter.sharedMesh;
 
+            // Ensure the mesh is valid
+            if (mesh != null)
+            {
+                // Get the local-to-world matrix for the current MeshFilter
+                Matrix4x4 localToWorld = targetMeshFilter.transform.localToWorldMatrix;
 
+                // Accumulate vertices, transforming them to world space
+                foreach (Vector3 vertex in mesh.vertices)
+                {
+                    vertices.Add(localToWorld.MultiplyPoint3x4(vertex));
+                }
+
+                // Accumulate indices, adjusting them for the overall vertex offset
+                int vertexOffset = vertices.Count - mesh.vertexCount;
+                foreach (int index in mesh.triangles)
+                {
+                    indices.Add(index + vertexOffset);
+                }
+            }
         }
-        Debug.Log(vertices.Count);
-        Debug.Log(indices.Count);
+
+        Debug.Log("Total vertices count: " + vertices.Count);   
+        Debug.Log("Total indices count: " + indices.Count);
+
+        // Create and set up compute buffers
         meshVertexBuffer = new ComputeBuffer(vertices.Count, sizeof(float) * 3);
         meshIndexBuffer = new ComputeBuffer(indices.Count, sizeof(int));
 
@@ -139,6 +162,7 @@ public class Voxelizer : MonoBehaviour
     private void VoxelizeMesh()
     {
         // Set buffers and parameters for the compute shader
+        voxelComputeShader.SetVector("centerPosition", new Vector3(0,0, 0));
         voxelComputeShader.SetBuffer(0, "voxels", voxelBuffer);
         voxelComputeShader.SetBuffer(0, "vertices", meshVertexBuffer);
         voxelComputeShader.SetBuffer(0, "indices", meshIndexBuffer);

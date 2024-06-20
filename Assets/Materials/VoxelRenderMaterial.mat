@@ -14,12 +14,12 @@ Material:
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
-  m_LockedProperties: 
+  m_LockedProperties: :m_DoubleSidedGI
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -77,6 +77,7 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
+    - _VoxelSize: 1
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 0.9622642, g: 0.049020927, b: 0.049020927, a: 1}

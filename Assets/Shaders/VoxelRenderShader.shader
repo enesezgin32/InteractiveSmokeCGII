@@ -6,6 +6,9 @@ Shader "Custom/VoxelRenderShader"
     }
     SubShader
     {
+        Tags { "Queue" = "Transparent" "RenderType" = "Transparent" }
+        Blend SrcAlpha OneMinusSrcAlpha
+        ZWrite Off
         Pass
         {
             CGPROGRAM
@@ -39,7 +42,8 @@ Shader "Custom/VoxelRenderShader"
             {
                 v2f o;
                 Voxel voxel = voxels[v.instanceID];
-                o.pos = UnityObjectToClipPos(float4(voxel.position + v.position, 1.0));
+                float3 scaledPosition = voxel.position + v.position * _VoxelSize;
+                o.pos = UnityObjectToClipPos(float4(scaledPosition, 1.0));
                 o.color = voxel.color;
                 return o;
             }
