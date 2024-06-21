@@ -470,7 +470,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shader: {fileID: 4800000, guid: b89be5246f9eb45478de29c0f7db9783, type: 3}
-  _volumeTexture: {fileID: 11700000, guid: 2162085869592487bbed46acfea0905e, type: 2}
+  _volumeTexture: {fileID: 11700000, guid: ac15077422d384fc5b5fac0182664750, type: 2}
 --- !u!114 &1164967610
 MonoBehaviour:
   m_ObjectHideFlags: 0
