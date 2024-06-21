@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.18028326, g: 0.22571333, b: 0.30692202, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1270,6 +1270,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1996591869}
   - component: {fileID: 1996591868}
+  - component: {fileID: 1996591870}
   m_Layer: 0
   m_Name: Voxelizer
   m_TagString: Untagged
@@ -1312,6 +1313,26 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1996591870
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1996591867}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01d6487476d1f420cb8c71966a6396f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  voxelComputeShader: {fileID: 7200000, guid: cc9d69ae4daaa49a6a5a137e7c3e29de, type: 3}
+  voxelRenderShader: {fileID: 4800000, guid: 44f18b0886f3b4d6dab4f78c9a133848, type: 3}
+  voxelMaterial: {fileID: 0}
+  voxelMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  gridSize: 40
+  voxelSize: 0.5
+  staticObjects: {fileID: 1978897558}
+  smokeRadius: 4
 --- !u!1 &2082079914
 GameObject:
   m_ObjectHideFlags: 0
