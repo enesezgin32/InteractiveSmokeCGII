@@ -36,6 +36,9 @@ public class Voxelizer : MonoBehaviour
     int createSmokeKernel;
 
 
+
+
+
     public struct Voxel
     {
         public Vector3 position;
@@ -57,8 +60,10 @@ public class Voxelizer : MonoBehaviour
     private Material voxelRenderMaterial;
 
 
-
-
+    float smokeStartTime = 0;
+    bool isSmokeExpanding = false;
+    float smokeRadius = 5.0f;
+    Vector3 smokeCenter = Vector3.zero; 
 
     void Start()
     {
@@ -85,10 +90,38 @@ public class Voxelizer : MonoBehaviour
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 Vector3 hitPoint = hit.point;
+                mapVoxelInfo = new int[gridSize * gridSize * gridSize];
+                smokeCenter = hitPoint;
 
-                CreateSmoke(hitPoint);
+                //optimizasyon bukucu bunu silmek lazim
+                VoxelizeMesh();
+                //CreateSmoke(hitPoint);
+
+                isSmokeExpanding = true;
+                smokeStartTime = Time.time; 
             }
         }
+
+
+        if(isSmokeExpanding)
+        {
+            var val = EaseFunction(Time.time - smokeStartTime);
+            mapVoxelInfo = new int[gridSize * gridSize * gridSize];
+            
+
+            //optimizasyon bukucu bunu silmek lazim
+            VoxelizeMesh();
+            //CreateSmoke(hitPoint);
+            voxelComputeShader.SetFloat("smokeRadius", smokeRadius * val);
+            CreateSmoke(smokeCenter);
+
+            if (val >= 1) 
+            {
+                isSmokeExpanding = false;
+                smokeStartTime = 0;
+            }
+        }
+
 
         if(Input.GetKeyDown(KeyCode.X))
         {
@@ -186,13 +219,10 @@ public class Voxelizer : MonoBehaviour
     {
 
         smokeVoxels = new Voxel[smokeWidth * smokeWidth * smokeWidth];
-        mapVoxelInfo = new int[gridSize * gridSize * gridSize];
+        
 
         mapVoxelInfoBuffer.SetData(mapVoxelInfo);
         smokeVoxelBuffer.SetData(smokeVoxels);
-
-        //optimizasyon bukucu bunu silmek lazim
-        VoxelizeMesh();
 
         voxelComputeShader.SetVector("smokeCenter", center);
         voxelComputeShader.SetInt("smokeWidth", smokeWidth);

@@ -25,14 +25,13 @@ float voxelSize; //size of each voxel
 
 uint3 gridSize; //size of map to voxelize
 
-float smokeRad; // radius of smoke
+float smokeRadius; // radius of smoke
 uint smokeWidth; //width of smoke
 uint smokeHeight; //height of smoke
 float3 smokeCenter; //center of smoke to spawn
 
 RWStructuredBuffer<Voxel> smokeVoxels; //smoke voxels
 
-//RWStructuredBuffer<uint4> stackForFill;
 
 
 
@@ -278,11 +277,12 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
         
         float3 currentPosition = indexToPos(currentIndex);
 
-        // Skip if this voxel is already processed or out of bounds
-        if (length((currentPosition - smokeCenter) / 3.0f) > 1.0f || mapVoxelInfo[currentIndex] != 0)
+        // Skip voxel and not go with it
+        if (length((currentPosition - smokeCenter) / smokeRadius) > 1.0f || mapVoxelInfo[currentIndex] != 0)
         {
             continue;
         }
+
 
         Voxel currentVoxel;
         currentVoxel.position = currentPosition;
@@ -296,9 +296,10 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
         currentVoxel.color = float4(0.2f, 0.2f, 0.2f, 0.5f);
 
         // Mark this voxel as processed
-        mapVoxelInfo[currentIndex] = 1;
+        mapVoxelInfo[currentIndex] = 2;
         smokeVoxels[smokeCount] = currentVoxel;
         smokeCount += 1;
+
 
         // Add neighboring voxels to the stack
         uint3 neighbors[6] =
