@@ -20,7 +20,7 @@ public class Voxelizer : MonoBehaviour
     private ComputeBuffer argsBuffer;
     private ComputeBuffer meshVertexBuffer;
     private ComputeBuffer meshIndexBuffer;
-    private ComputeBuffer mapVoxelInfoBuffer;
+    
     private Voxel[] mapVoxels;
 
     private ComputeBuffer smokeVoxelBuffer;
@@ -28,7 +28,12 @@ public class Voxelizer : MonoBehaviour
 
     private Bounds bounds;
 
+    private ComputeBuffer mapVoxelInfoBuffer;
     private int[] mapVoxelInfo;
+    private ComputeBuffer tempMapVoxelInfoBuffer;
+    private int[] tempMapVoxelInfo;
+
+
     [SerializeField] private Transform staticObjects;
 
 
@@ -90,11 +95,11 @@ public class Voxelizer : MonoBehaviour
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 Vector3 hitPoint = hit.point;
-                mapVoxelInfo = new int[gridSize * gridSize * gridSize];
+                //mapVoxelInfo = new int[gridSize * gridSize * gridSize];
                 smokeCenter = hitPoint;
 
                 //optimizasyon bukucu bunu silmek lazim
-                VoxelizeMesh();
+                //VoxelizeMesh();
                 //CreateSmoke(hitPoint);
 
                 isSmokeExpanding = true;
@@ -106,11 +111,11 @@ public class Voxelizer : MonoBehaviour
         if(isSmokeExpanding)
         {
             var val = EaseFunction(Time.time - smokeStartTime);
-            mapVoxelInfo = new int[gridSize * gridSize * gridSize];
+            //mapVoxelInfo = new int[gridSize * gridSize * gridSize];
             
 
             //optimizasyon bukucu bunu silmek lazim
-            VoxelizeMesh();
+            //VoxelizeMesh();
             //CreateSmoke(hitPoint);
             voxelComputeShader.SetFloat("smokeRadius", smokeRadius * val);
             CreateSmoke(smokeCenter);
@@ -147,34 +152,44 @@ public class Voxelizer : MonoBehaviour
 
     private void InitializeVoxels()
     {
-        mapVoxels = new Voxel[gridSize * gridSize * gridSize];
-        smokeVoxels = new Voxel[smokeArraySize * smokeArraySize * smokeArraySize];
-        mapVoxelInfo = new int[gridSize * gridSize * gridSize];
 
         int colorSize = sizeof(float) * 4;
         int vector3Size = sizeof(float) * 3;
         int totalVoxelDataSize = colorSize + vector3Size;
 
+
+        mapVoxels = new Voxel[gridSize * gridSize * gridSize]; // for debug purposes
         voxelBuffer = new ComputeBuffer(mapVoxels.Length, totalVoxelDataSize);
+
+        smokeVoxels = new Voxel[smokeArraySize * smokeArraySize * smokeArraySize];
         smokeVoxelBuffer = new ComputeBuffer(smokeVoxels.Length, totalVoxelDataSize);
 
+
+        mapVoxelInfo = new int[gridSize * gridSize * gridSize];
         mapVoxelInfoBuffer = new ComputeBuffer(mapVoxelInfo.Length, sizeof(int));
-        
+
+        tempMapVoxelInfo = new int[gridSize * gridSize * gridSize];
+        tempMapVoxelInfoBuffer = new ComputeBuffer(tempMapVoxelInfo.Length, sizeof(int));
+
+
+
+
 
         // Initialize the argument buffer
         uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
         args[0] = (uint)voxelMesh.GetIndexCount(0);
-        args[1] = (uint)mapVoxels.Length;
+        args[1] = (uint)mapVoxels.Length; // INSTANCE COUNT WILL BE DRAW
         args[2] = (uint)voxelMesh.GetIndexStart(0);
         args[3] = (uint)voxelMesh.GetBaseVertex(0);
         argsBuffer = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
         argsBuffer.SetData(args);
-
         // Set bounds for drawing
         bounds = new Bounds(Vector3.zero, new Vector3(gridSize, gridSize, gridSize) * voxelSize);
 
 
 
+
+        //STATIC MAP INITIALIZATION
         List<Vector3> vertices = new List<Vector3>();
         List<int> indices = new List<int>();
         // Iterate through all MeshFilter components in the staticObjects GameObject
@@ -214,30 +229,27 @@ public class Voxelizer : MonoBehaviour
         meshVertexBuffer.SetData(vertices.ToArray());
         meshIndexBuffer.SetData(indices.ToArray());
 
-
     }
 
     private void CreateSmoke(Vector3 center)
     {
 
         smokeVoxels = new Voxel[smokeArraySize * smokeArraySize * smokeArraySize];
-        
+        tempMapVoxelInfo = new int[gridSize * gridSize * gridSize];
 
-        mapVoxelInfoBuffer.SetData(mapVoxelInfo);
+        //mapVoxelInfoBuffer.SetData(mapVoxelInfo);
+        tempMapVoxelInfoBuffer.SetData(tempMapVoxelInfo);
         smokeVoxelBuffer.SetData(smokeVoxels);
 
         voxelComputeShader.SetVector("smokeCenter", center);
-        voxelComputeShader.SetInt("smokeWidth", smokeArraySize);
-        voxelComputeShader.SetInt("smokeHeight", smokeArraySize);
 
         voxelComputeShader.SetBuffer(createSmokeKernel, "smokeVoxels", smokeVoxelBuffer);
         voxelComputeShader.SetBuffer(createSmokeKernel, "mapVoxelInfo", mapVoxelInfoBuffer);
+        voxelComputeShader.SetBuffer(createSmokeKernel, "tempMapVoxelInfo", tempMapVoxelInfoBuffer);
 
-        //voxelComputeShader.Dispatch(createSmokeKernel, Mathf.CeilToInt(smokeWidth / 10.0f), Mathf.CeilToInt(smokeWidth / 10.0f), 1);
         voxelComputeShader.Dispatch(createSmokeKernel, 1, 1, 1);
 
         smokeVoxelBuffer.GetData(smokeVoxels);
-        mapVoxelInfoBuffer.GetData(mapVoxelInfo);
     }
 
     private void VoxelizeMesh()

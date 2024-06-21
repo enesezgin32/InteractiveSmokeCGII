@@ -10,6 +10,7 @@ struct Voxel
 
 
 RWStructuredBuffer<int> mapVoxelInfo; //tum harita
+RWStructuredBuffer<int> tempMapVoxelInfo; //tum harita gecici
 
 RWStructuredBuffer<Voxel> mapVoxels; // test amacli
 
