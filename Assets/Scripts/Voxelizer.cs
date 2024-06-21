@@ -272,15 +272,16 @@ public class Voxelizer : MonoBehaviour
 
     void OnDestroy()
     {
-        if (voxelBuffer != null)
-        {
-            voxelBuffer.Release();
-        }
-        if (argsBuffer != null)
-        {
-            argsBuffer.Release();
-        }
+        if (voxelBuffer != null) voxelBuffer.Release();
+        if (argsBuffer != null) argsBuffer.Release();
+        if (smokeVoxelBuffer != null) smokeVoxelBuffer.Release();
+        if (tempMapVoxelInfoBuffer != null) tempMapVoxelInfoBuffer.Release();
+        if (mapVoxelInfoBuffer != null) mapVoxelInfoBuffer.Release();
+        if (queueFillBuffer != null) queueFillBuffer.Release();
+        if (meshVertexBuffer != null) meshVertexBuffer.Release();
+        if (meshIndexBuffer != null) meshIndexBuffer.Release();
     }
+
 
 
     private void StaticMeshInitialization()

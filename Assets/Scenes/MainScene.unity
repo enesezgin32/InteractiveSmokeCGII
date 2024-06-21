@@ -1269,7 +1269,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1996591869}
-  - component: {fileID: 1996591868}
   - component: {fileID: 1996591870}
   m_Layer: 0
   m_Name: Voxelizer
@@ -1278,26 +1277,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1996591868
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1996591867}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 577f86273bccbe847ae28d24114667ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  voxelComputeShader: {fileID: 7200000, guid: 757ae716591a7d94195c883df984c756, type: 3}
-  voxelRenderShader: {fileID: 4800000, guid: 35040a69e5762e9448832fda9359d2d8, type: 3}
-  voxelMaterial: {fileID: 0}
-  voxelMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
-  gridSize: 40
-  voxelSize: 0.5
-  staticObjects: {fileID: 1978897558}
-  smokeRadius: 5
 --- !u!4 &1996591869
 Transform:
   m_ObjectHideFlags: 0
