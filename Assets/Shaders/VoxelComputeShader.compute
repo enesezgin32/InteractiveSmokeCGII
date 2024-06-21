@@ -32,7 +32,7 @@ float3 smokeCenter; //center of smoke to spawn
 
 RWStructuredBuffer<Voxel> smokeVoxels; //smoke voxels
 
-
+//RWStructuredBuffer<uint3> queueFill;
 
 
 struct Triangle
@@ -238,8 +238,7 @@ void CSVoxelizeMap(uint3 id : SV_DispatchThreadID)
 
 
 
-#define MAX_STACK_SIZE 2048
-
+#define MAX_QUEUE_SIZE 2048
 [numthreads(1, 1, 1)]
 void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
 {
@@ -248,46 +247,36 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
     float3 position = smokeCenter;
 
     uint smokeCount = 0;
-    // Stack for flood fill algorithm
-    uint4 stack[MAX_STACK_SIZE]; // -> cordinatlar ve step count var stackte
-    uint stackPointer = 0;
+    // Queue for BFS algorithm
+    uint4 queue[MAX_QUEUE_SIZE]; // Coordinates and step count are stored in the queue
+    uint head = 0;
+    uint tail = 0;
 
-    stack[stackPointer++] = uint4(cord,0);
-    
+    queue[tail++] = uint4(cord, 0);
     
     Voxel startVoxel;
     startVoxel.position = indexToPos(index);
-        
-
-
     startVoxel.color = float4(0, 0, 0, 1);
     smokeVoxels[smokeCount] = startVoxel;
     smokeCount += 1;
 
-    while (stackPointer > 0)
+    while (head < tail)
     {
-        uint3 currentCor = stack[--stackPointer].xyz;
-        uint stepId = stack[stackPointer].w;
+        uint3 currentCor = queue[head % 2048].xyz;
+        uint stepCount = queue[head % 2048].w;
+        head++;
         uint currentIndex = cordToIndex(currentCor);
         
         float3 currentPosition = indexToPos(currentIndex);
 
-        // Skip voxel and not go with it
-        if (length((currentPosition - smokeCenter) / smokeRadius) > 1.0f || mapVoxelInfo[currentIndex] != 0 )
+        // Skip voxel if conditions are not met
+        if (length((currentPosition - smokeCenter) / smokeRadius) > 1.0f || mapVoxelInfo[currentIndex] != 0 || stepCount > 15)
         {
             continue;
         }
 
-
         Voxel currentVoxel;
         currentVoxel.position = currentPosition;
-        
-        // Randomize smoke voxel color for visual variety
-        float r = rand(float2(currentCor.x + centerPosition.x, currentCor.y + centerPosition.y));
-        float g = rand(float2(currentCor.y + centerPosition.y, currentCor.x + centerPosition.x));
-        float b = rand(float2(currentCor.x + centerPosition.x, currentCor.x + centerPosition.x));
-
-        currentVoxel.color = float4(r, g, b, 1);
         currentVoxel.color = float4(0.2f, 0.2f, 0.2f, 0.5f);
 
         // Mark this voxel as processed
@@ -295,8 +284,7 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
         smokeVoxels[smokeCount] = currentVoxel;
         smokeCount += 1;
 
-
-        // Add neighboring voxels to the stack
+        // Add neighboring voxels to the queue
         uint3 neighbors[6] =
         {
             uint3(currentCor.x + 1, currentCor.y, currentCor.z),
@@ -311,9 +299,10 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
         {
             uint3 neighborId = neighbors[i];
             // Check bounds
-            if (neighborId.x < gridSize.x && neighborId.y < gridSize.y && neighborId.z < gridSize.z && stackPointer < MAX_STACK_SIZE)
+            if (neighborId.x < gridSize.x && neighborId.y < gridSize.y && neighborId.z < gridSize.z)
             {
-                stack[stackPointer++] = uint4(neighborId,stepId+1);
+                queue[tail % 2048] = uint4(neighborId, stepCount + 1);
+                tail++;
             }
         }
     }

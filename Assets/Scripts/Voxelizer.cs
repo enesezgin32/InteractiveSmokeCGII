@@ -13,7 +13,7 @@ public class Voxelizer : MonoBehaviour
     public int gridSize = 10;
     public float voxelSize = 1f;
 
-    public int smokeWidth = 10;
+    private int smokeArraySize = 20;
 
     private ComputeBuffer voxelBuffer;
 
@@ -62,7 +62,7 @@ public class Voxelizer : MonoBehaviour
 
     float smokeStartTime = 0;
     bool isSmokeExpanding = false;
-    float smokeRadius = 5.0f;
+    public float smokeRadius = 5.0f;
     Vector3 smokeCenter = Vector3.zero; 
 
     void Start()
@@ -148,7 +148,7 @@ public class Voxelizer : MonoBehaviour
     private void InitializeVoxels()
     {
         mapVoxels = new Voxel[gridSize * gridSize * gridSize];
-        smokeVoxels = new Voxel[smokeWidth * smokeWidth * smokeWidth];
+        smokeVoxels = new Voxel[smokeArraySize * smokeArraySize * smokeArraySize];
         mapVoxelInfo = new int[gridSize * gridSize * gridSize];
 
         int colorSize = sizeof(float) * 4;
@@ -220,15 +220,15 @@ public class Voxelizer : MonoBehaviour
     private void CreateSmoke(Vector3 center)
     {
 
-        smokeVoxels = new Voxel[smokeWidth * smokeWidth * smokeWidth];
+        smokeVoxels = new Voxel[smokeArraySize * smokeArraySize * smokeArraySize];
         
 
         mapVoxelInfoBuffer.SetData(mapVoxelInfo);
         smokeVoxelBuffer.SetData(smokeVoxels);
 
         voxelComputeShader.SetVector("smokeCenter", center);
-        voxelComputeShader.SetInt("smokeWidth", smokeWidth);
-        voxelComputeShader.SetInt("smokeHeight", smokeWidth);
+        voxelComputeShader.SetInt("smokeWidth", smokeArraySize);
+        voxelComputeShader.SetInt("smokeHeight", smokeArraySize);
 
         voxelComputeShader.SetBuffer(createSmokeKernel, "smokeVoxels", smokeVoxelBuffer);
         voxelComputeShader.SetBuffer(createSmokeKernel, "mapVoxelInfo", mapVoxelInfoBuffer);
