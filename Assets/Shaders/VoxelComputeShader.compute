@@ -9,31 +9,25 @@ struct Voxel
 
 
 
-RWStructuredBuffer<int> mapVoxelInfo; //tum harita
-RWStructuredBuffer<int> tempMapVoxelInfo; //tum harita gecici
-
-RWStructuredBuffer<Voxel> mapVoxels; // test amacli
-
-StructuredBuffer<float3> meshVertices; //static objects' vertices
-
-StructuredBuffer<uint> meshIndices; //static objects' indices
-
-uint meshIndiceCount; //static objects' indice count
-
-float3 centerPosition; //map center 
-
+//GENEL
 float voxelSize; //size of each voxel 
-
 uint3 gridSize; //size of map to voxelize
 
-float smokeRadius; // radius of smoke
-uint smokeWidth; //width of smoke
-uint smokeHeight; //height of smoke
-float3 smokeCenter; //center of smoke to spawn
+// VOXELIZE MAP 
+RWStructuredBuffer<Voxel> mapVoxels; // test amacli
+StructuredBuffer<float3> meshVertices; //static objects' vertices
+StructuredBuffer<uint> meshIndices; //static objects' indices
+uint meshIndiceCount; //static objects' indice count
+float3 centerPosition; //map center 
+RWStructuredBuffer<int> mapVoxelInfo; //tum harita
 
+//CREATE SMOKE 
+RWStructuredBuffer<int> tempMapVoxelInfo; //tum harita gecici
+float smokeRadius; // radius of smoke
+float3 smokeCenter; //center of smoke to spawn
 RWStructuredBuffer<Voxel> smokeVoxels; //smoke voxels
 
-//RWStructuredBuffer<uint3> queueFill;
+RWStructuredBuffer<uint4> queueFill;
 
 
 struct Triangle
@@ -176,27 +170,6 @@ bool TriangleIntersectsAABB(float3 v0, float3 v1, float3 v2, float3 boxMin, floa
     return true;
 }
 
-
-
-//[numthreads(10, 10, 1)]
-//void CSMain(uint3 id : SV_DispatchThreadID)
-//{
-//    uint index = id.x * 10 + id.y; // Ensure index calculation matches grid size
-//    if (index < gridSize.x * gridSize.y * gridSize.z)
-//    {
-//        Voxel voxel;
-//        voxel.position = float3(id.x, 0.5, id.y) + centerPosition; // Position relative to center
-//        voxel.color = rand(voxel.position.xz);
-
-//        float r = rand(float2(id.x + centerPosition.x, id.y + centerPosition.y));
-//        float g = rand(float2(id.y + centerPosition.y, id.x + centerPosition.x));
-//        float b = rand(float2(id.x + centerPosition.x, id.x + centerPosition.x));
-
-//        voxel.color = float4(r, g, b, 1.0);
-//        voxels[index] = voxel;
-//    }
-//}
-
 [numthreads(10, 10, 10)]
 void CSVoxelizeMap(uint3 id : SV_DispatchThreadID)
 {
@@ -249,11 +222,11 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
 
     uint smokeCount = 0;
     // Queue for BFS algorithm
-    uint4 queue[MAX_QUEUE_SIZE]; // Coordinates and step count are stored in the queue
+    //uint4 queueFill[MAX_QUEUE_SIZE]; // Coordinates and step count are stored in the queueFill
     uint head = 0;
     uint tail = 0;
 
-    queue[tail++] = uint4(cord, 0);
+    queueFill[tail++] = uint4(cord, 0);
     
     Voxel startVoxel;
     startVoxel.position = indexToPos(index);
@@ -263,15 +236,15 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
 
     while (head < tail)
     {
-        uint3 currentCor = queue[head % 2048].xyz;
-        uint stepCount = queue[head % 2048].w;
+        uint3 currentCor = queueFill[head % 2048].xyz;
+        uint stepCount = queueFill[head % 2048].w;
         head++;
         uint currentIndex = cordToIndex(currentCor);
         
-        float3 currentPosition = indexToPos(currentIndex);
+        float3 currentPosition = indexToPos(currentIndex); 
 
         // Skip voxel if conditions are not met
-        if (length((currentPosition - smokeCenter) / smokeRadius) > 1.0f || mapVoxelInfo[currentIndex] != 0 || stepCount > 20)
+        if (length((currentPosition - smokeCenter) / smokeRadius) > 1.0f || mapVoxelInfo[currentIndex] != 0 || tempMapVoxelInfo[currentIndex] != 0 || stepCount > 20)
         {
             continue;
         }
@@ -281,11 +254,11 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
         currentVoxel.color = float4(0.2f, 0.2f, 0.2f, 0.5f);
 
         // Mark this voxel as processed
-        mapVoxelInfo[currentIndex] = 2;
+        tempMapVoxelInfo[currentIndex] = 2;
         smokeVoxels[smokeCount] = currentVoxel;
         smokeCount += 1;
 
-        // Add neighboring voxels to the queue
+        // Add neighboring voxels to the queueFill
         uint3 neighbors[6] =
         {
             uint3(currentCor.x + 1, currentCor.y, currentCor.z),
@@ -302,7 +275,7 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
             // Check bounds
             if (neighborId.x < gridSize.x && neighborId.y < gridSize.y && neighborId.z < gridSize.z)
             {
-                queue[tail % 2048] = uint4(neighborId, stepCount + 1);
+                queueFill[tail % 2048] = uint4(neighborId, stepCount + 1);
                 tail++;
             }
         }

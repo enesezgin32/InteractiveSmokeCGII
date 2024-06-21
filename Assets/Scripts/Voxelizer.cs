@@ -33,6 +33,8 @@ public class Voxelizer : MonoBehaviour
     private ComputeBuffer tempMapVoxelInfoBuffer;
     private int[] tempMapVoxelInfo;
 
+    private ComputeBuffer queueFillBuffer;
+    private Vector4[] queueFill;
 
     [SerializeField] private Transform staticObjects;
 
@@ -171,7 +173,8 @@ public class Voxelizer : MonoBehaviour
         tempMapVoxelInfo = new int[gridSize * gridSize * gridSize];
         tempMapVoxelInfoBuffer = new ComputeBuffer(tempMapVoxelInfo.Length, sizeof(int));
 
-
+        queueFill = new Vector4[5000]; // queue icin yeterli gibi allaha emanet
+        queueFillBuffer = new ComputeBuffer(queueFill.Length, sizeof(int) * 4);
 
 
 
@@ -237,7 +240,9 @@ public class Voxelizer : MonoBehaviour
         smokeVoxels = new Voxel[smokeArraySize * smokeArraySize * smokeArraySize];
         tempMapVoxelInfo = new int[gridSize * gridSize * gridSize];
 
-        //mapVoxelInfoBuffer.SetData(mapVoxelInfo);
+        
+
+        queueFillBuffer.SetData(queueFill);
         tempMapVoxelInfoBuffer.SetData(tempMapVoxelInfo);
         smokeVoxelBuffer.SetData(smokeVoxels);
 
@@ -246,6 +251,7 @@ public class Voxelizer : MonoBehaviour
         voxelComputeShader.SetBuffer(createSmokeKernel, "smokeVoxels", smokeVoxelBuffer);
         voxelComputeShader.SetBuffer(createSmokeKernel, "mapVoxelInfo", mapVoxelInfoBuffer);
         voxelComputeShader.SetBuffer(createSmokeKernel, "tempMapVoxelInfo", tempMapVoxelInfoBuffer);
+        voxelComputeShader.SetBuffer(createSmokeKernel, "queueFill", queueFillBuffer);
 
         voxelComputeShader.Dispatch(createSmokeKernel, 1, 1, 1);
 
