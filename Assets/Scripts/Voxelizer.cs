@@ -133,6 +133,8 @@ public class Voxelizer : MonoBehaviour
         }
 
         
+
+        //test amacli duruyor duzelt
         VoxelRenderMaterial.SetBuffer("voxels", smokeVoxelBuffer);
         //VoxelRenderMaterial.SetBuffer("voxels", voxelBuffer);
 

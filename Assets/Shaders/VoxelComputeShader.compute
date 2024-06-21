@@ -122,8 +122,6 @@ bool TriangleIntersectsAABBSat(float3 v0, float3 v1, float3 v2, float3 aabbExten
     return !(max(-maxP, minP) > r);
 }
 
-
-
 bool TriangleIntersectsAABB(float3 v0, float3 v1, float3 v2, float3 boxMin, float3 boxMax)
 {
     Triangle tri;
@@ -240,7 +238,7 @@ void CSVoxelizeMap(uint3 id : SV_DispatchThreadID)
 
 
 
-#define MAX_STACK_SIZE 1024
+#define MAX_STACK_SIZE 2048
 
 [numthreads(1, 1, 1)]
 void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
@@ -260,12 +258,9 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
     Voxel startVoxel;
     startVoxel.position = indexToPos(index);
         
-        // Randomize smoke voxel color for visual variety
-    float r = rand(float2(id.x + centerPosition.x, id.y + centerPosition.y));
-    float g = rand(float2(id.y + centerPosition.y, id.x + centerPosition.x));
-    float b = rand(float2(id.x + centerPosition.x, id.x + centerPosition.x));
 
-    startVoxel.color = float4(r, g, b, 1);
+
+    startVoxel.color = float4(0, 0, 0, 1);
     smokeVoxels[smokeCount] = startVoxel;
     smokeCount += 1;
 
@@ -278,7 +273,7 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
         float3 currentPosition = indexToPos(currentIndex);
 
         // Skip voxel and not go with it
-        if (length((currentPosition - smokeCenter) / smokeRadius) > 1.0f || mapVoxelInfo[currentIndex] != 0)
+        if (length((currentPosition - smokeCenter) / smokeRadius) > 1.0f || mapVoxelInfo[currentIndex] != 0 )
         {
             continue;
         }
