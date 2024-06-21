@@ -276,7 +276,8 @@ public class Voxelizer : MonoBehaviour
         else
         {
             // Ease out
-            return -1 + (4 - 2 * time) * time;
+            //return -1 + (4 - 2 * time) * time;
+            return 2 * time * time;
         }
     }
 
