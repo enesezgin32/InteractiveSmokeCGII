@@ -32,7 +32,7 @@ float3 smokeCenter; //center of smoke to spawn
 
 RWStructuredBuffer<Voxel> smokeVoxels; //smoke voxels
 
-RWStructuredBuffer<uint4> stackForFill;
+//RWStructuredBuffer<uint4> stackForFill;
 
 
 
@@ -239,43 +239,7 @@ void CSVoxelizeMap(uint3 id : SV_DispatchThreadID)
     
 }
 
-//[numthreads(128, 1, 1)]
-//void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
-//{
-//    uint index = id.x + smokeWidth * id.y; // Ensure index calculation matches grid size
-//    if (index >= smokeHeight * smokeWidth)
-//        return;
 
-    
-//    float3 centerOffset = smokeCenter-float3(voxelSize * smokeWidth * 0.5f, 0, voxelSize * smokeWidth * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
-//    float3 position = float3(id.x, 0, id.y) * voxelSize + centerOffset;
-//    Voxel voxel;
-//    voxel.position = position;
-    
-//    uint mapVoxelIndex = posToIndex(voxel.position);
-//    uint smokeVoxelIndex = index;
-
-
-
-
-//    // Randomize smoke voxel color for visual variety
-//    float r = rand(float2(id.x + centerPosition.x, id.y + centerPosition.y));
-//    float g = rand(float2(id.y + centerPosition.y, id.x + centerPosition.x));
-//    float b = rand(float2(id.x + centerPosition.x, id.x + centerPosition.x));
-
-//    voxel.color = float4(r, g, b, 1); 
-
-    
-//    if (mapVoxelInfo[mapVoxelIndex] == 1)
-//    {
-//        voxel.color = float4(0, 0, 0, 1);
-//        return;
-//    }
-        
-    
-    
-//    smokeVoxels[smokeVoxelIndex] = voxel;
-//}
 
 #define MAX_STACK_SIZE 1024
 
@@ -288,7 +252,7 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
 
     uint smokeCount = 0;
     // Stack for flood fill algorithm
-    uint4 stack[MAX_STACK_SIZE]; // -> cordinatlar ve step count var
+    uint4 stack[MAX_STACK_SIZE]; // -> cordinatlar ve step count var stackte
     uint stackPointer = 0;
 
     stack[stackPointer++] = uint4(cord,0);
@@ -315,7 +279,7 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
         float3 currentPosition = indexToPos(currentIndex);
 
         // Skip if this voxel is already processed or out of bounds
-        if (length((currentPosition - smokeCenter) / smokeRad) > 1.0f || mapVoxelInfo[currentIndex] != 0 || stepId > 100)
+        if (length((currentPosition - smokeCenter) / 3.0f) > 1.0f || mapVoxelInfo[currentIndex] != 0)
         {
             continue;
         }

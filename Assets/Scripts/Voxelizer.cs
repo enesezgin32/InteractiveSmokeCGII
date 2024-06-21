@@ -36,12 +36,6 @@ public class Voxelizer : MonoBehaviour
     int createSmokeKernel;
 
 
-    private float smokeRad = 5.0f;
-    private bool isSmokeExpanding = false;
-    private float expandingStartTime = 0f;
-    private Vector3 smokeCenter = Vector3.zero;
-
-
     public struct Voxel
     {
         public Vector3 position;
@@ -91,33 +85,10 @@ public class Voxelizer : MonoBehaviour
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 Vector3 hitPoint = hit.point;
-                smokeCenter = hitPoint;
-                expandingStartTime = Time.time;
-                isSmokeExpanding = true;
 
-                //optimizasyon bukucu bunu silmek lazim
-                VoxelizeMesh();
+                CreateSmoke(hitPoint);
             }
         }
-
-
-        if (isSmokeExpanding)
-        {
-            float val = EaseFunction(Time.time - expandingStartTime);
-            voxelComputeShader.SetFloat("smokeRad", smokeRad * val);
-            CreateSmoke(smokeCenter);
-
-            if (val >= 1)
-            {
-                smokeCenter = Vector3.zero;
-                isSmokeExpanding = false;
-                expandingStartTime = 0;
-            }
-            
-        }
-
-
-
 
         if(Input.GetKeyDown(KeyCode.X))
         {
@@ -220,10 +191,12 @@ public class Voxelizer : MonoBehaviour
         mapVoxelInfoBuffer.SetData(mapVoxelInfo);
         smokeVoxelBuffer.SetData(smokeVoxels);
 
+        //optimizasyon bukucu bunu silmek lazim
+        VoxelizeMesh();
+
         voxelComputeShader.SetVector("smokeCenter", center);
         voxelComputeShader.SetInt("smokeWidth", smokeWidth);
         voxelComputeShader.SetInt("smokeHeight", smokeWidth);
-        
 
         voxelComputeShader.SetBuffer(createSmokeKernel, "smokeVoxels", smokeVoxelBuffer);
         voxelComputeShader.SetBuffer(createSmokeKernel, "mapVoxelInfo", mapVoxelInfoBuffer);
@@ -268,12 +241,12 @@ public class Voxelizer : MonoBehaviour
         if (time < 0.5f)
         {
             // Ease in
-            return time * time;
+            return 2 * time * time;
         }
         else
         {
             // Ease out
-            return time * time;
+            return -1 + (4 - 2 * time) * time;
         }
     }
 
