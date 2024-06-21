@@ -237,8 +237,8 @@ void CSVoxelizeMap(uint3 id : SV_DispatchThreadID)
 }
 
 
-
-#define MAX_QUEUE_SIZE 2048
+#define STACK_SIZE 1024
+#define MAX_QUEUE_SIZE STACK_SIZE
 [numthreads(1, 1, 1)]
 void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
 {
@@ -262,8 +262,8 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
 
     while (head < tail)
     {
-        uint3 currentCor = queue[head % 2048].xyz;
-        uint stepCount = queue[head % 2048].w;
+        uint3 currentCor = queue[head % STACK_SIZE].xyz;
+        uint stepCount = queue[head % STACK_SIZE].w;
         head++;
         uint currentIndex = cordToIndex(currentCor);
         
@@ -301,7 +301,7 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
             // Check bounds
             if (neighborId.x < gridSize.x && neighborId.y < gridSize.y && neighborId.z < gridSize.z)
             {
-                queue[tail % 2048] = uint4(neighborId, stepCount + 1);
+                queue[tail % STACK_SIZE] = uint4(neighborId, stepCount + 1);
                 tail++;
             }
         }

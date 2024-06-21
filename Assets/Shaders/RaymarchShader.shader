@@ -137,7 +137,7 @@ Shader "Hidden/RaymarchShader"
                 float dens = density(_camPos.xyz + dir * surfaceDist, dir); 
                 if(surfaceDist == -1)
                     return res;
-                float ABSORPTION = 15;
+                float ABSORPTION = 0.6;
                 return lerp(res * exp(-dens * ABSORPTION), fixed4(0, 1,0 , 1), 1 - exp(-dens * ABSORPTION));
             }
             ENDCG
