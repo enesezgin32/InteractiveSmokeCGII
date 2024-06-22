@@ -39,7 +39,7 @@ Shader "Hidden/RaymarchShader"
 
             float3 gridSize;
             float3 centerPosition;
-            uint voxelSize;
+            float voxelSize;
 
 
             struct appdata
@@ -87,16 +87,24 @@ Shader "Hidden/RaymarchShader"
 
             uint posToIndex(float3 position)
             {
+
+
                 float3 centerOffset = centerPosition - float3(voxelSize * gridSize.x * 0.5f, 0, voxelSize * gridSize.z * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
                 uint3 id = (position - centerOffset) / voxelSize; // find x y z in float values
-                uint index = ((uint) id.x + gridSize.x * ((uint) id.y + gridSize.y * (uint) id.z));
+
+                if(id.x < 0 || id.x > gridSize.x || id.y < 0 || id.y > gridSize.y || id.z < 0 || id.z > gridSize.z)
+                    return -1;
+
+                uint index = ( id.x + gridSize.x * ( id.y + gridSize.y * id.z));
+
+
                 return index;
             }
 
             uint3 posToCord(float3 position)
             {
                 float3 centerOffset = centerPosition - float3(voxelSize * gridSize.x * 0.5f, 0, voxelSize * gridSize.z * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
-                uint3 id = (position - centerOffset) / voxelSize; // find x y z in float values
+                float3 id = (position - centerOffset) / voxelSize; // find x y z in float values
                 uint index = ((uint) id.x + gridSize.x * ((uint) id.y + gridSize.y * (uint) id.z));
                 return indexToCord(index);
             }
@@ -150,7 +158,7 @@ Shader "Hidden/RaymarchShader"
                     
                      p += rd * stepDist;
 
-                     if (tempMapVoxelInfo[posToIndex(p)] == 2)
+                     if (posToIndex(p) != -1 && tempMapVoxelInfo[posToIndex(p)] == 2)
                      {
                         res += stepDist * tex3D(_VolumeTex, p * 0.25 + float3( _Time.y * 0.1f, 0, 0)).r;
                          if(hitDist == -1)

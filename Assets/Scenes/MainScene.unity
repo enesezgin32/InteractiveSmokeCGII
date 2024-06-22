@@ -833,7 +833,7 @@ Transform:
   m_GameObject: {fileID: 1164967604}
   serializedVersion: 2
   m_LocalRotation: {x: 0.30762437, y: -0, z: -0, w: 0.9515079}
-  m_LocalPosition: {x: 0, y: 13.4, z: -14.6}
+  m_LocalPosition: {x: 0, y: 14.58, z: -16.24}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1357,11 +1357,12 @@ MonoBehaviour:
   voxelMaterial: {fileID: 0}
   voxelMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   gridSize: 40
-  voxelSize: 1
+  voxelSize: 0.5
   staticObjects: {fileID: 1978897558}
   centerPosition: {x: 0, y: 0, z: 0}
   tempMapVoxelInfo: 
   smokeRadius: 5
+  maxStepCount: 20
 --- !u!1 &2082079914
 GameObject:
   m_ObjectHideFlags: 0

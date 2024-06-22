@@ -68,7 +68,7 @@ uint cordToIndex(uint3 cord)
 uint posToIndex(float3 position)
 {
     float3 centerOffset = centerPosition - float3(voxelSize * gridSize.x * 0.5f, 0, voxelSize * gridSize.z * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
-    uint3 id = (position - centerOffset) / voxelSize; // find x y z in float values
+    float3 id = (position - centerOffset) / voxelSize; // find x y z in float values
     uint index = ((uint) id.x + gridSize.x * ((uint) id.y + gridSize.y * (uint) id.z));
     return index;
 }
@@ -76,7 +76,7 @@ uint posToIndex(float3 position)
 uint3 posToCord(float3 position)
 {
     float3 centerOffset = centerPosition - float3(voxelSize * gridSize.x * 0.5f, 0, voxelSize * gridSize.z * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
-    uint3 id = (position - centerOffset) / voxelSize; // find x y z in float values
+    float3 id = (position - centerOffset) / voxelSize; // find x y z in float values
     uint index = ((uint) id.x + gridSize.x * ((uint) id.y + gridSize.y * (uint) id.z));
     return indexToCord(index);
 }
