@@ -35,7 +35,7 @@ public class Voxelizer : MonoBehaviour
     private int[] mapVoxelInfo;
 
     [SerializeField] private Transform staticObjects;
-    Vector3 smokeCenter = Vector3.zero;
+    [HideInInspector] public Vector3 centerPosition = Vector3.zero;
 
     //SMOKE BUFFER AND VARIABLES
     private int smokeArraySize = 20; // -> SMOKE CAPACITY 20*20*20 -> 8000 tane smoke cube yapabiliyoz max
@@ -43,8 +43,8 @@ public class Voxelizer : MonoBehaviour
     private ComputeBuffer smokeVoxelBuffer;
     public Voxel[] smokeVoxels;
 
-    private ComputeBuffer tempMapVoxelInfoBuffer;
-    private int[] tempMapVoxelInfo;
+    public ComputeBuffer tempMapVoxelInfoBuffer;
+    [HideInInspector] public int[] tempMapVoxelInfo;
 
     private ComputeBuffer queueFillBuffer;
     private Vector4[] queueFill;
@@ -53,6 +53,9 @@ public class Voxelizer : MonoBehaviour
     bool isSmokeExpanding = false;
     public float smokeRadius = 5.0f;
 
+    public int maxStepCount = 20;
+
+    Vector3 smokeCenter = Vector3.zero;
 
     //KERNELS
     int voxelizeKernel;
@@ -140,7 +143,7 @@ public class Voxelizer : MonoBehaviour
         }
 
         VoxelRenderMaterial.SetBuffer("voxels", smokeVoxelBuffer); // smokelari renderlemak icin
-        //VoxelRenderMaterial.SetBuffer("voxels", voxelBuffer); -> mapi gormek icin yorumdan cikarabilirsin enesim maviler bos kirmizilar static mesh demek
+        //VoxelRenderMaterial.SetBuffer("voxels", voxelBuffer); // -> mapi gormek icin yorumdan cikarabilirsin enesim maviler bos kirmizilar static mesh demek
 
         VoxelRenderMaterial.SetFloat("_VoxelSize", voxelSize); // voxel size renderlarken size ayarlasin diye
         //Graphics.DrawMeshInstancedIndirect(voxelMesh, 0, VoxelRenderMaterial, bounds, argsBuffer); // render fonsiyonu
@@ -199,7 +202,8 @@ public class Voxelizer : MonoBehaviour
         smokeVoxels = new Voxel[smokeArraySize * smokeArraySize * smokeArraySize]; // renderlanacak smoke icin arrayi bosaltiyoz
         tempMapVoxelInfo = new int[gridSize * gridSize * gridSize]; // temp mapi de ayni sekil nolur nolmaz
 
-        
+        voxelComputeShader.SetInt("maxStepCount", maxStepCount);
+
         //bufferlara degerleri atiyoz
         queueFillBuffer.SetData(queueFill);
         tempMapVoxelInfoBuffer.SetData(tempMapVoxelInfo);
@@ -217,6 +221,7 @@ public class Voxelizer : MonoBehaviour
         voxelComputeShader.Dispatch(createSmokeKernel, 1, 1, 1);
         //smokelari bufferdan okuyoz sonra renderlamak icin
         smokeVoxelBuffer.GetData(smokeVoxels);
+        tempMapVoxelInfoBuffer.GetData(tempMapVoxelInfo);
     }
 
     private void VoxelizeMesh()

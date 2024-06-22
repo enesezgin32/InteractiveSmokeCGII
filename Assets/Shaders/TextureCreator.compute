@@ -2,7 +2,7 @@
 
 #pragma kernel CSMain
 
-
+#include "noiseSimplex.cginc"
 
 // Declare the textures
 RWStructuredBuffer<float4> colors;
@@ -18,11 +18,64 @@ uint size;
 
 float featurePointMultiplier;
 
+float perlinEffect;
+
+
 
 uint featurePointsCount1;
 uint featurePointsCount2;
 uint featurePointsCount3;
 
+
+// Perlin noise functions
+float Fade(float t)
+{
+    return t * t * t * (t * (t * 6 - 15) + 10);
+}
+
+float Lerp(float a, float b, float t)
+{
+    return a + t * (b - a);
+}
+
+float Grad(int hash, float x, float y, float z)
+{
+    int h = hash & 15;
+    float u = h < 8 ? x : y;
+    float v = h < 4 ? y : (h == 12 || h == 14 ? x : z);
+    return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
+}
+
+float PerlinNoise3D(float3 p)
+{
+    int X = (int) floor(p.x) & 255;
+    int Y = (int) floor(p.y) & 255;
+    int Z = (int) floor(p.z) & 255;
+    
+    p.x -= floor(p.x);
+    p.y -= floor(p.y);
+    p.z -= floor(p.z);
+    
+    float u = Fade(p.x);
+    float v = Fade(p.y);
+    float w = Fade(p.z);
+    
+    int A = (X + Y) & 255;
+    int AA = (A + Z) & 255;
+    int AB = (A + 1 + Z) & 255;
+    int B = (X + 1 + Y) & 255;
+    int BA = (B + Z) & 255;
+    int BB = (B + 1 + Z) & 255;
+    
+    return Lerp(w, Lerp(v, Lerp(u, Grad(X + Y + Z, p.x, p.y, p.z),
+                                    Grad(X + Y + Z + 1, p.x - 1, p.y, p.z)),
+                            Lerp(u, Grad(X + Y + 1 + Z, p.x, p.y - 1, p.z),
+                                    Grad(X + Y + 1 + Z + 1, p.x - 1, p.y - 1, p.z))),
+                    Lerp(v, Lerp(u, Grad(X + 1 + Y + Z, p.x, p.y, p.z - 1),
+                                    Grad(X + 1 + Y + Z + 1, p.x - 1, p.y, p.z - 1)),
+                            Lerp(u, Grad(X + 1 + Y + 1 + Z, p.x, p.y - 1, p.z - 1),
+                                    Grad(X + 1 + Y + 1 + Z + 1, p.x - 1, p.y - 1, p.z - 1))));
+}
 
 float WorleyNoise3D(float3 pos, StructuredBuffer<float3> featurePoints, int featurePointsCount)
 {
@@ -49,10 +102,17 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     float3 coord = id.xyz / (float) (size);
 
-    float noiseValue = WorleyNoise3D(coord, featurePoints3, featurePointsCount3) * 0.3f +
+    
+    
+    float worleyNoiseValue = WorleyNoise3D(coord, featurePoints3, featurePointsCount3) * 0.3f +
                        WorleyNoise3D(coord, featurePoints2, featurePointsCount2) * 0.3f +
                        WorleyNoise3D(coord, featurePoints1, featurePointsCount1) * 0.4f;
 
-    colors[id.x + id.y * size + id.z * size * size] = float4(noiseValue, noiseValue, noiseValue, 1.0f);
+    
+    float perlinNoiseValue = snoise(id);
+
+    float combinedNoise = worleyNoiseValue * (1-perlinEffect) + perlinNoiseValue * perlinEffect;
+    
+    colors[id.x + id.y * size + id.z * size * size] = float4(combinedNoise, combinedNoise, combinedNoise, 1.0f);
 }
 

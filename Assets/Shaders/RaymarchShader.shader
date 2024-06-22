@@ -22,18 +22,26 @@ Shader "Hidden/RaymarchShader"
 
             #include "UnityCG.cginc"
             
+            StructuredBuffer<uint> tempMapVoxelInfo;
+
+
             sampler2D _MainTex;
             sampler2D _CameraDepthTexture;
             sampler3D _VolumeTex;
 
             uniform float voxelCount = 0;
-            uniform float4 voxels[1000];
+            // uniform float4 voxels[1000];
             uniform float4 _camPos;
             uniform float4 _camTL;
             uniform float4 _camTR;
             uniform float4 _camBL;
             uniform float4 _camBR;
             uniform float4x4 _camToWorldMatrix;
+
+            float3 gridSize;
+            float3 centerPosition;
+            uint voxelSize;
+
 
             struct appdata
             {
@@ -64,6 +72,56 @@ Shader "Hidden/RaymarchShader"
                 o.uv = v.uv.xy;
                 return o;
             }
+            uint3 indexToCord(uint index)
+            {
+                uint z = index / (gridSize.x * gridSize.y);
+                uint y = (index % (gridSize.x * gridSize.y)) / gridSize.x;
+                uint x = index % gridSize.x;
+    
+                return uint3(x, y, z);
+            }
+
+            uint cordToIndex(uint3 cord)
+            {
+                return cord.x + gridSize.x * (cord.y + gridSize.y * cord.z);
+            }
+
+            uint posToIndex(float3 position)
+            {
+                float3 centerOffset = centerPosition - float3(voxelSize * gridSize.x * 0.5f, 0, voxelSize * gridSize.z * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
+                uint3 id = (position - centerOffset) / voxelSize; // find x y z in float values
+                uint index = ((uint) id.x + gridSize.x * ((uint) id.y + gridSize.y * (uint) id.z));
+                return index;
+            }
+
+            uint3 posToCord(float3 position)
+            {
+                float3 centerOffset = centerPosition - float3(voxelSize * gridSize.x * 0.5f, 0, voxelSize * gridSize.z * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
+                uint3 id = (position - centerOffset) / voxelSize; // find x y z in float values
+                uint index = ((uint) id.x + gridSize.x * ((uint) id.y + gridSize.y * (uint) id.z));
+                return indexToCord(index);
+            }
+
+            float3 indexToPos(uint index)
+            {
+                uint3 id = indexToCord(index);
+
+                float3 centerOffset = centerPosition - float3(voxelSize * gridSize.x * 0.5f, 0, voxelSize * gridSize.z * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
+                float3 position = float3(id.x, id.y, id.z) * voxelSize + centerOffset;
+
+                return position;
+            }
+
+            float3 cordToPos(uint3 cord)
+            {
+                float3 centerOffset = centerPosition - float3(voxelSize * gridSize.x * 0.5f, 0, voxelSize * gridSize.z * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
+                float3 position = float3(cord.x, cord.y, cord.z) * voxelSize + centerOffset;
+                return position;
+            }
+
+
+
+
 // SDF FUCNTIONS
             float opSmoothUnion( float d1, float d2, float k )
             {
@@ -83,38 +141,70 @@ Shader "Hidden/RaymarchShader"
             float scene(float3 p)
             {
                 float res = 1000000;
-                for(int i=0;i<min(voxelCount, 200);i++)
+
+                uint ind = posToIndex(p);
+                if(tempMapVoxelInfo[ind] == 2)
                 {
-                    res = min(res, sdBox(voxels[i].xyz, voxels[i].www, p));
+                    return min(res, sdBox(indexToPos(ind), float3(voxelSize, voxelSize, voxelSize), p)) + 0.5f;
                 }
+
+                // for(int i=0;i<min(voxelCount, 200);i++)
+                // {
+                //     res = min(res, sdBox(voxels[i].xyz, voxels[i].www, p));
+                // }
                 //res = sdBox(voxels[0].xyz, voxels[0].www, p);
                 return res;
             }
-//CALCULATE DENSITY OF VOLUME FOR THE RAY
+
             float density(float3 ro, float3 rd)
             {
-                float totalDist = 0.0;
-                float stepDist = 0.05;
-                float3 p = ro;
-                int maxIT = 512;
-                do
-                {
-                    p += rd * stepDist;
-                    totalDist += stepDist; 
-                }
-                while (scene(p) < 0 && maxIT-- > 0);
-                totalDist -= scene(p);
-                int sampleCount = 40;
-                p = ro;
                 float res = 0.0f;
-                float stepLen = totalDist/sampleCount;
-                for(int i=0;i<sampleCount;i++)
+                float totalDist = 0.0;
+                float stepDist = 0.025;
+                float3 p = ro;
+
+                while( totalDist < 30)
                 {
-                    p += rd * stepLen;
-                    res+= stepLen * tex3D(_VolumeTex, p * 0.25 + float3( _Time.y * 0.1f, 0, 0)).r;
+                    totalDist += stepDist;
+
+                     p += rd * stepDist;
+
+                     if (tempMapVoxelInfo[posToIndex(p)] == 2)
+                     {
+                        res += stepDist * tex3D(_VolumeTex, p * 0.25 + float3( _Time.y * 0.1f, 0, 0)).r;
+
+                     }
                 }
-                return res;
+
+                return res; 
             }
+//CALCULATE DENSITY OF VOLUME FOR THE RAY
+            // float density(float3 ro, float3 rd)
+            // {
+            //     float totalDist = 0.0;
+            //     float stepDist = 0.05;
+            //     float3 p = ro;
+            //     int maxIT = 512;
+            //     do
+            //     {
+            //         p += rd * stepDist;
+            //         totalDist += stepDist; 
+            //     }
+            //     while (scene(p) < 0 && maxIT-- > 0);
+
+
+            //     totalDist -= scene(p);
+            //     int sampleCount = 40;
+            //     p = ro;
+            //     float res = 0.0f;
+            //     float stepLen = totalDist/sampleCount;
+            //     for(int i=0;i<sampleCount;i++)
+            //     {
+            //         p += rd * stepLen;
+            //         res+= stepLen * tex3D(_VolumeTex, p * 0.25 + float3( _Time.y * 0.1f, 0, 0)).r;
+            //     }
+            //     return res;
+            // }
             float2 raymarchDist(float3 ro, float3 rd, float depth)
             {
                 float t = 0.0;
@@ -144,9 +234,9 @@ Shader "Hidden/RaymarchShader"
                 float surfaceDist = raymarchDist(_camPos.xyz, dir, depth);
                 
                 float dens = density(_camPos.xyz + dir * surfaceDist, dir); 
-                if(surfaceDist == -1)
-                    return res;
-                float ABSORPTION = 0.6;
+                // if(surfaceDist == -1)
+                //     return res;
+                float ABSORPTION = 1;
                 return lerp(res * exp(-dens * ABSORPTION), fixed4(0, 1,0 , 1), 1 - exp(-dens * ABSORPTION));
             }
             ENDCG

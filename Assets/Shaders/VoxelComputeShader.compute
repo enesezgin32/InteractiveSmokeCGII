@@ -29,6 +29,8 @@ RWStructuredBuffer<Voxel> smokeVoxels; //smoke voxels
 
 RWStructuredBuffer<uint4> queueFill;
 
+uint maxStepCount;
+
 
 struct Triangle
 {
@@ -226,7 +228,29 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
     uint head = 0;
     uint tail = 0;
 
-    queueFill[tail++] = uint4(cord, 0);
+    //queueFill[tail++] = uint4(cord, 0);
+    // Add neighboring voxels to the queueFill
+    uint3 neighbors[6] =
+    {
+        uint3(cord.x + 1, cord.y, cord.z),
+            uint3(cord.x - 1, cord.y, cord.z),
+            uint3(cord.x, cord.y + 1, cord.z),
+            uint3(cord.x, cord.y - 1, cord.z),
+            uint3(cord.x, cord.y, cord.z + 1),
+            uint3(cord.x, cord.y, cord.z - 1)
+    };
+
+    for (int i = 0; i < 6; i++)
+    {
+        uint3 neighborId = neighbors[i];
+            // Check bounds
+        if (neighborId.x < gridSize.x && neighborId.y < gridSize.y && neighborId.z < gridSize.z)
+        {
+            queueFill[tail % 5000] = uint4(neighborId, 1);
+            tail++;
+        }
+    }
+    
     
     Voxel startVoxel;
     startVoxel.position = indexToPos(index);
@@ -236,15 +260,15 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
 
     while (head < tail)
     {
-        uint3 currentCor = queueFill[head % 2048].xyz;
-        uint stepCount = queueFill[head % 2048].w;
+        uint3 currentCor = queueFill[head % 5000].xyz;
+        uint stepCount = queueFill[head % 5000].w;
         head++;
         uint currentIndex = cordToIndex(currentCor);
         
         float3 currentPosition = indexToPos(currentIndex); 
 
         // Skip voxel if conditions are not met
-        if (length((currentPosition - smokeCenter) / smokeRadius) > 1.0f || mapVoxelInfo[currentIndex] != 0 || tempMapVoxelInfo[currentIndex] != 0 || stepCount > 20)
+        if (length((currentPosition - smokeCenter) / smokeRadius) > 1.0f || mapVoxelInfo[currentIndex] != 0 || tempMapVoxelInfo[currentIndex] != 0 || stepCount > maxStepCount)
         {
             continue;
         }
@@ -275,7 +299,7 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
             // Check bounds
             if (neighborId.x < gridSize.x && neighborId.y < gridSize.y && neighborId.z < gridSize.z)
             {
-                queueFill[tail % 2048] = uint4(neighborId, stepCount + 1);
+                queueFill[tail % 5000] = uint4(neighborId, stepCount + 1);
                 tail++;
             }
         }

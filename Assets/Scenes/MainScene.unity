@@ -898,15 +898,61 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1164967604}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0ec5f275f400d474e8091d341a589b80, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rayMarchComputeShader: {fileID: 7200000, guid: 3653ff84373258347b612cb0042e11b3,
-    type: 3}
-  volumeTexture: {fileID: 11700000, guid: ac15077422d384fc5b5fac0182664750, type: 2}
-  smokeVoxels: []
+  _shader: {fileID: 4800000, guid: b89be5246f9eb45478de29c0f7db9783, type: 3}
+  _volumeTexture: {fileID: 11700000, guid: 09eed4ad90931464fb22df0f3f33c053, type: 2}
+--- !u!1 &1346990288
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1346990290}
+  - component: {fileID: 1346990289}
+  m_Layer: 0
+  m_Name: TextureCreater
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1346990289
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1346990288}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59687588796cfcf48bde249c0d61c393, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  worleyNoiseCompute: {fileID: 7200000, guid: 679f5ceee4e6d274cb4c8e9bc0db2a46, type: 3}
+  size: 128
+  featurePointMultiplier: 10
+  perlinEffect: 0.101
+--- !u!4 &1346990290
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1346990288}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 5.3174477, y: -0.10785961, z: -3.8729236}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1374757083
 GameObject:
   m_ObjectHideFlags: 0
@@ -1311,9 +1357,11 @@ MonoBehaviour:
   voxelMaterial: {fileID: 0}
   voxelMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   gridSize: 40
-  voxelSize: 0.5
+  voxelSize: 1
   staticObjects: {fileID: 1978897558}
-  smokeRadius: 4
+  centerPosition: {x: 0, y: 0, z: 0}
+  tempMapVoxelInfo: 
+  smokeRadius: 5
 --- !u!1 &2082079914
 GameObject:
   m_ObjectHideFlags: 0
@@ -1427,3 +1475,4 @@ SceneRoots:
   - {fileID: 77218644}
   - {fileID: 1996591869}
   - {fileID: 1978897558}
+  - {fileID: 1346990290}

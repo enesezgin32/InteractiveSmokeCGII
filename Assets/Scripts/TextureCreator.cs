@@ -9,6 +9,12 @@ public class TextureCreator : MonoBehaviour
     public int size = 128;
     public float featurePointMultiplier = 5;
 
+
+
+    [Range(0.0f, 1.0f)]
+    public float perlinEffect = 0.2f;
+
+
     private Color[] colors;
     private void Start()
     {
@@ -58,6 +64,7 @@ public class TextureCreator : MonoBehaviour
         worleyNoiseCompute.SetInt("featurePointsCount2", featurePoints2.Length);
         worleyNoiseCompute.SetInt("featurePointsCount3", featurePoints3.Length);
         worleyNoiseCompute.SetInt("size", size);
+        worleyNoiseCompute.SetFloat("perlinEffect", perlinEffect);
 
         worleyNoiseCompute.SetFloat("featurePointMultiplier", featurePointMultiplier);
 
@@ -79,7 +86,7 @@ public class TextureCreator : MonoBehaviour
         // Apply the texture and save it as an asset
         texture.Apply();
 
-        AssetDatabase.CreateAsset(texture, $"Assets/Textures/WorleyNoiseTexture3D_{size}_{featurePointMultiplier}.asset");
+        AssetDatabase.CreateAsset(texture, $"Assets/Textures/WorleyNoiseTexture3D_{size}_{featurePointMultiplier}_{perlinEffect}.asset");
     }
 
     Vector3[] GenerateFeaturePoints(int count)

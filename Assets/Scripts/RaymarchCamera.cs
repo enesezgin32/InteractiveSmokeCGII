@@ -46,6 +46,9 @@ public class RaymarchCamera : SceneViewFilter
     private static readonly int CamToWorldMatrix = Shader.PropertyToID("_camToWorldMatrix");
     private static readonly int VolumeTex = Shader.PropertyToID("_VolumeTex");
     private static readonly int VoxelCount = Shader.PropertyToID("voxelCount");
+
+
+
     private float startTime;
     private void Start()
     {
@@ -70,22 +73,43 @@ public class RaymarchCamera : SceneViewFilter
         RaymarchMaterial.SetVector(CamPos, Camera.transform.position);
         RaymarchMaterial.SetMatrix(CamToWorldMatrix, Camera.cameraToWorldMatrix);
         RaymarchMaterial.SetTexture(VolumeTex, _volumeTexture);
-        
-        Vector4[] smokeVoxels = new Vector4[_voxelizer.smokeVoxels.Length];
-        int j = 0;
-        for (int i = 0; i < _voxelizer.smokeVoxels.Length; i++)
+
+
+        RaymarchMaterial.SetVector("gridSize", new Vector3(_voxelizer.gridSize, _voxelizer.gridSize, _voxelizer.gridSize));
+        RaymarchMaterial.SetVector("centerPosition", _voxelizer.centerPosition);
+        RaymarchMaterial.SetFloat("voxelSize", _voxelizer.voxelSize);
+
+        _voxelizer.tempMapVoxelInfoBuffer.SetData(_voxelizer.tempMapVoxelInfo);
+        RaymarchMaterial.SetBuffer("tempMapVoxelInfo", _voxelizer.tempMapVoxelInfoBuffer);
+
+        int countOfTwos = 0;
+        foreach (int value in _voxelizer.tempMapVoxelInfo)
         {
-            var p = _voxelizer.smokeVoxels[i].position;
-            if(p != Vector3.zero)
-                smokeVoxels[j++] = new Vector4(p.x,p.y, p.z, _voxelizer.voxelSize);
+            if (value == 2)
+            {
+                countOfTwos++;
+            }
         }
-        if(Time.time - startTime < 10)
-        {
-            RaymarchMaterial.SetFloat(VoxelCount, j);
-            if(j>0)
-                RaymarchMaterial.SetVectorArray("voxels", smokeVoxels);
-        }
-        
+
+        Debug.Log("Count of 2s: " + countOfTwos);
+
+
+
+        //Vector4[] smokeVoxels = new Vector4[_voxelizer.smokeVoxels.Length];
+        //int j = 0;
+        //for (int i = 0; i < _voxelizer.smokeVoxels.Length; i++)
+        //{
+        //    var p = _voxelizer.smokeVoxels[i].position;
+        //    if(p != Vector3.zero)
+        //        smokeVoxels[j++] = new Vector4(p.x,p.y, p.z, _voxelizer.voxelSize);
+        //}
+        //if(Time.time - startTime < 10)
+        //{
+        //    RaymarchMaterial.SetFloat(VoxelCount, j);
+        //    if(j>0)
+        //        RaymarchMaterial.SetVectorArray("voxels", smokeVoxels);
+        //}
+
         //set render target and draw a fullscreen quad
         RenderTexture.active = destination;
         RaymarchMaterial.SetTexture(MainTex, source);
