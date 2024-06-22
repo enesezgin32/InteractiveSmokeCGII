@@ -24,7 +24,6 @@ Shader "Hidden/RaymarchShader"
             
             StructuredBuffer<uint> tempMapVoxelInfo;
 
-
             sampler2D _MainTex;
             sampler2D _CameraDepthTexture;
             sampler3D _VolumeTex;
@@ -137,93 +136,30 @@ Shader "Hidden/RaymarchShader"
               float3 q = abs(pos - p) - b;
               return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
             }
-// GET SCENES CLOSEST POINT
-            float scene(float3 p)
-            {
-                float res = 1000000;
 
-                uint ind = posToIndex(p);
-                if(tempMapVoxelInfo[ind] == 2)
-                {
-                    return min(res, sdBox(indexToPos(ind), float3(voxelSize, voxelSize, voxelSize), p)) + 0.5f;
-                }
-
-                // for(int i=0;i<min(voxelCount, 200);i++)
-                // {
-                //     res = min(res, sdBox(voxels[i].xyz, voxels[i].www, p));
-                // }
-                //res = sdBox(voxels[0].xyz, voxels[0].www, p);
-                return res;
-            }
-
-            float density(float3 ro, float3 rd)
+            float2 density(float3 ro, float3 rd)
             {
                 float res = 0.0f;
                 float totalDist = 0.0;
                 float stepDist = 0.025;
+                float hitDist = -1;
                 float3 p = ro;
-
                 while( totalDist < 30)
                 {
                     totalDist += stepDist;
-
+                    
                      p += rd * stepDist;
 
                      if (tempMapVoxelInfo[posToIndex(p)] == 2)
                      {
                         res += stepDist * tex3D(_VolumeTex, p * 0.25 + float3( _Time.y * 0.1f, 0, 0)).r;
-
+                         if(hitDist == -1)
+                            hitDist = totalDist;
                      }
                 }
-
-                return res; 
+                return float2(res, hitDist); 
             }
-//CALCULATE DENSITY OF VOLUME FOR THE RAY
-            // float density(float3 ro, float3 rd)
-            // {
-            //     float totalDist = 0.0;
-            //     float stepDist = 0.05;
-            //     float3 p = ro;
-            //     int maxIT = 512;
-            //     do
-            //     {
-            //         p += rd * stepDist;
-            //         totalDist += stepDist; 
-            //     }
-            //     while (scene(p) < 0 && maxIT-- > 0);
 
-
-            //     totalDist -= scene(p);
-            //     int sampleCount = 40;
-            //     p = ro;
-            //     float res = 0.0f;
-            //     float stepLen = totalDist/sampleCount;
-            //     for(int i=0;i<sampleCount;i++)
-            //     {
-            //         p += rd * stepLen;
-            //         res+= stepLen * tex3D(_VolumeTex, p * 0.25 + float3( _Time.y * 0.1f, 0, 0)).r;
-            //     }
-            //     return res;
-            // }
-            float2 raymarchDist(float3 ro, float3 rd, float depth)
-            {
-                float t = 0.0;
-                for (int i = 0; i < 512; i++)
-                {
-                    if (t >= depth)
-                    {
-                        return -1;
-                    }
-                    float3 p = ro + rd * t;
-                    float d = scene(p);
-                    if (d < 0.001)
-                    {
-                        return t;
-                    }
-                    t += d;
-                }
-                return -1;
-            }
             fixed4 frag (v2f i) : SV_Target
             {
                 fixed4 res = fixed4(tex2D(_MainTex, i.uv).xyz, 1);
@@ -231,13 +167,12 @@ Shader "Hidden/RaymarchShader"
                 depth *= length(i.nearPlanePoint - _camPos.xyz);
                 
                 float3 dir = normalize(i.nearPlanePoint - _camPos.xyz);
-                float surfaceDist = raymarchDist(_camPos.xyz, dir, depth);
                 
-                float dens = density(_camPos.xyz + dir * surfaceDist, dir); 
-                // if(surfaceDist == -1)
-                //     return res;
-                float ABSORPTION = 1;
-                return lerp(res * exp(-dens * ABSORPTION), fixed4(0, 1,0 , 1), 1 - exp(-dens * ABSORPTION));
+                float2 dens = density(_camPos.xyz , dir);
+                if(dens.y == -1 || dens.y > depth)
+                    return res;
+                float ABSORPTION = 0.25f;
+                return lerp(res * exp(-dens.x * ABSORPTION), fixed4(0, 1,0 , 1), 1 - exp(-dens.x * ABSORPTION));
             }
             ENDCG
         }
