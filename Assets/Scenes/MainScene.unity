@@ -152,7 +152,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: -0.51, z: 0}
-  m_LocalScale: {x: 20, y: 0.5, z: 20}
+  m_LocalScale: {x: 20, y: 1, z: 20}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1978897558}
@@ -904,7 +904,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _shader: {fileID: 4800000, guid: b89be5246f9eb45478de29c0f7db9783, type: 3}
-  _volumeTexture: {fileID: 11700000, guid: 09eed4ad90931464fb22df0f3f33c053, type: 2}
+  _volumeTexture: {fileID: 11700000, guid: 045f5979e4780984b9e788f4adb4debb, type: 2}
 --- !u!1 &1346990288
 GameObject:
   m_ObjectHideFlags: 0
@@ -936,8 +936,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   worleyNoiseCompute: {fileID: 7200000, guid: 679f5ceee4e6d274cb4c8e9bc0db2a46, type: 3}
   size: 128
-  featurePointMultiplier: 10
-  perlinEffect: 0.014
+  featurePointMultiplier: 8.1
+  perlinEffect: 0.011
 --- !u!4 &1346990290
 Transform:
   m_ObjectHideFlags: 0
@@ -1362,7 +1362,8 @@ MonoBehaviour:
   centerPosition: {x: 0, y: 0, z: 0}
   tempMapVoxelInfo: 
   smokeRadius: 5
-  maxStepCount: 20
+  maxStepCount: 45
+  smokeCenter: {x: 0, y: 0, z: 0}
 --- !u!1 &2082079914
 GameObject:
   m_ObjectHideFlags: 0

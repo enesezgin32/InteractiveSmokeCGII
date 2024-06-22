@@ -228,7 +228,7 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
     uint head = 0;
     uint tail = 0;
 
-    //queueFill[tail++] = uint4(cord, 0);
+    //queueFill[tail++] = uint4(cord, 1);
     // Add neighboring voxels to the queueFill
     uint3 neighbors[6] =
     {

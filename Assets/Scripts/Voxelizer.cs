@@ -55,7 +55,7 @@ public class Voxelizer : MonoBehaviour
 
     public int maxStepCount = 20;
 
-    Vector3 smokeCenter = Vector3.zero;
+    [HideInInspector]public Vector3 smokeCenter = Vector3.zero;
 
     //KERNELS
     int voxelizeKernel;

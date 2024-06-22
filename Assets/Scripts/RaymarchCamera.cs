@@ -78,20 +78,22 @@ public class RaymarchCamera : SceneViewFilter
         RaymarchMaterial.SetVector("gridSize", new Vector3(_voxelizer.gridSize, _voxelizer.gridSize, _voxelizer.gridSize));
         RaymarchMaterial.SetVector("centerPosition", _voxelizer.centerPosition);
         RaymarchMaterial.SetFloat("voxelSize", _voxelizer.voxelSize);
+        RaymarchMaterial.SetFloat("smokeRadius", _voxelizer.smokeRadius);
+        RaymarchMaterial.SetVector("smokeCenter", _voxelizer.smokeCenter);
 
         _voxelizer.tempMapVoxelInfoBuffer.SetData(_voxelizer.tempMapVoxelInfo);
         RaymarchMaterial.SetBuffer("tempMapVoxelInfo", _voxelizer.tempMapVoxelInfoBuffer);
 
-        int countOfTwos = 0;
-        foreach (int value in _voxelizer.tempMapVoxelInfo)
-        {
-            if (value == 2)
-            {
-                countOfTwos++;
-            }
-        }
+        //int countOfTwos = 0;
+        //foreach (int value in _voxelizer.tempMapVoxelInfo)
+        //{
+        //    if (value == 2)
+        //    {
+        //        countOfTwos++;
+        //    }
+        //}
 
-        Debug.Log("Count of 2s: " + countOfTwos);
+        //Debug.Log("Count of 2s: " + countOfTwos);
 
 
 

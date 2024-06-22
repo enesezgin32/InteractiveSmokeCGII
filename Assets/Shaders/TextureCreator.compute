@@ -104,9 +104,9 @@ void CSMain(uint3 id : SV_DispatchThreadID)
 
     
     
-    float worleyNoiseValue = WorleyNoise3D(coord, featurePoints3, featurePointsCount3) * 0.3f +
-                       WorleyNoise3D(coord, featurePoints2, featurePointsCount2) * 0.3f +
-                       WorleyNoise3D(coord, featurePoints1, featurePointsCount1) * 0.4f;
+    float worleyNoiseValue = WorleyNoise3D(coord, featurePoints3, featurePointsCount3) * 0.125f +
+                       WorleyNoise3D(coord, featurePoints2, featurePointsCount2) * 0.25f +
+                       WorleyNoise3D(coord, featurePoints1, featurePointsCount1) * 0.625f;
 
     
     float perlinNoiseValue = snoise(id);

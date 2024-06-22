@@ -23,9 +23,9 @@ public class TextureCreator : MonoBehaviour
 
     void GenerateWorleyNoiseTexture3D()
     {
-        int feature1 = size/8;
-        int feature2 = size / 2;
-        int feature3 = size;
+        int feature1 = 4;
+        int feature2 = 8;
+        int feature3 = 32;
 
         // Generate feature points
         Vector3[] featurePoints1 = GenerateFeaturePoints(size * feature1);
