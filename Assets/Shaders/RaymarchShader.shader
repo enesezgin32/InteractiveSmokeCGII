@@ -132,13 +132,6 @@ Shader "Hidden/RaymarchShader"
             }
 
 
-            // float SmoothStep(float edge0, float edge1, float x)
-            // {
-            //     // Ensure x is clamped between 0 and 1
-            //     x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
-            //     // Perform the smooth step interpolation
-            //     return x * x * (3 - 2 * x);
-            // }
 
 // SDF FUCNTIONS
             float opSmoothUnion( float d1, float d2, float k )
@@ -181,7 +174,7 @@ Shader "Hidden/RaymarchShader"
 
                         float dist = min(1.0f, length(p-smokeCenter) / smokeRadius);
 
-                        dist = smoothstep(0.25f, 1.0f, dist);
+                        dist = smoothstep(0.65f, 1.0f, dist);
 
                         float falloff = min(1.0f, dist + n);
 

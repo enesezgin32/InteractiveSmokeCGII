@@ -151,8 +151,8 @@ Transform:
   m_GameObject: {fileID: 14758737}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.51, z: 0}
-  m_LocalScale: {x: 20, y: 1, z: 20}
+  m_LocalPosition: {x: 0, y: -0.25, z: 0}
+  m_LocalScale: {x: 20, y: 0.99, z: 20}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1978897558}
@@ -1361,7 +1361,7 @@ MonoBehaviour:
   staticObjects: {fileID: 1978897558}
   centerPosition: {x: 0, y: 0, z: 0}
   tempMapVoxelInfo: 
-  smokeRadius: 5
+  smokeRadius: 7
   maxStepCount: 45
   smokeCenter: {x: 0, y: 0, z: 0}
 --- !u!1 &2082079914
