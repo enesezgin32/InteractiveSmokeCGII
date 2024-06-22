@@ -157,15 +157,15 @@ Shader "Hidden/RaymarchShader"
                 while( totalDist < 30)
                 {
                     totalDist += stepDist;
-                    
-                     p += rd * stepDist;
 
-                     if (posToIndex(p) != -1 && tempMapVoxelInfo[posToIndex(p)] != 0)
-                     {
-                        res += stepDist * tex3D(_VolumeTex, p * 0.25 + float3( _Time.y * 0.1f, 0, 0)).r;
-                         if(hitDist == -1)
+                    p += rd * stepDist;
+                    int voxelStep = tempMapVoxelInfo[posToIndex(p)];
+                    if (posToIndex(p) != -1 && tempMapVoxelInfo[posToIndex(p)] != 0)
+                    {
+                        res += stepDist * tex3D(_VolumeTex, p * 0.1 + float3( _Time.y * 0.1f, 0, 0)).r / ((float)voxelStep / 6);
+                        if(hitDist == -1)
                             hitDist = totalDist;
-                     }
+                    }
                 }
                 return float2(res, hitDist); 
             }
@@ -181,7 +181,7 @@ Shader "Hidden/RaymarchShader"
                 float2 dens = density(_camPos.xyz , dir);
                 if(dens.y == -1 || dens.y > depth)
                     return res;
-                float ABSORPTION = 0.25f;
+                float ABSORPTION = 1;
                 return lerp(res * exp(-dens.x * ABSORPTION), fixed4(0, 1,0 , 1), 1 - exp(-dens.x * ABSORPTION));
             }
             ENDCG
