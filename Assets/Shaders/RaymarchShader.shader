@@ -41,7 +41,7 @@ Shader "Hidden/RaymarchShader"
             float3 centerPosition;
             float voxelSize;
 
-
+            
             struct appdata
             {
                 float4 vertex : POSITION;
@@ -92,7 +92,9 @@ Shader "Hidden/RaymarchShader"
                 float3 centerOffset = centerPosition - float3(voxelSize * gridSize.x * 0.5f, 0, voxelSize * gridSize.z * 0.5f) + float3(1.0f, 0.0f, 1.0f) * voxelSize * 0.5f;
                 uint3 id = (position - centerOffset) / voxelSize; // find x y z in float values
 
-                if(id.x < 0 || id.x > gridSize.x || id.y < 0 || id.y > gridSize.y || id.z < 0 || id.z > gridSize.z)
+                float3 idcheck = (position - centerOffset) / voxelSize;
+
+                if(idcheck.x < 0 || idcheck.x > gridSize.x || idcheck.y < 0 || idcheck.y > gridSize.y || idcheck.z < 0 || idcheck.z > gridSize.z)
                     return -1;
 
                 uint index = ( id.x + gridSize.x * ( id.y + gridSize.y * id.z));
