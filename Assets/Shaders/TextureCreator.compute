@@ -1,0 +1,58 @@
+// WorleyNoiseCompute.compute
+
+#pragma kernel CSMain
+
+
+
+// Declare the textures
+RWStructuredBuffer<float4> colors;
+
+// Declare feature points buffers
+StructuredBuffer<float3> featurePoints1;
+StructuredBuffer<float3> featurePoints2;
+StructuredBuffer<float3> featurePoints3;
+
+uint size;
+
+// Uniforms
+
+float featurePointMultiplier;
+
+
+uint featurePointsCount1;
+uint featurePointsCount2;
+uint featurePointsCount3;
+
+
+float WorleyNoise3D(float3 pos, StructuredBuffer<float3> featurePoints, int featurePointsCount)
+{
+    float minDist = 1.0f;
+    for (int i = 0; i < featurePointsCount; i++)
+    {
+        float3 point1 = featurePoints[i];
+        float dist = distance(pos, point1);
+        if (dist < minDist)
+        {
+            minDist = dist;
+        }
+    }
+    return 1.0f - clamp(minDist * featurePointMultiplier, 0, 1);
+}
+
+
+
+[numthreads(8, 8, 8)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= size || id.y >= size || id.z >= size)
+        return;
+
+    float3 coord = id.xyz / (float) (size);
+
+    float noiseValue = WorleyNoise3D(coord, featurePoints3, featurePointsCount3) * 0.3f +
+                       WorleyNoise3D(coord, featurePoints2, featurePointsCount2) * 0.3f +
+                       WorleyNoise3D(coord, featurePoints1, featurePointsCount1) * 0.4f;
+
+    colors[id.x + id.y * size + id.z * size * size] = float4(noiseValue, noiseValue, noiseValue, 1.0f);
+}
+
