@@ -898,13 +898,15 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1164967604}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0ec5f275f400d474e8091d341a589b80, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _shader: {fileID: 0}
-  _volumeTexture: {fileID: 0}
+  rayMarchComputeShader: {fileID: 7200000, guid: 3653ff84373258347b612cb0042e11b3,
+    type: 3}
+  volumeTexture: {fileID: 11700000, guid: ac15077422d384fc5b5fac0182664750, type: 2}
+  smokeVoxels: []
 --- !u!1 &1374757083
 GameObject:
   m_ObjectHideFlags: 0

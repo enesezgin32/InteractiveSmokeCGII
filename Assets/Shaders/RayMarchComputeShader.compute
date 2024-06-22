@@ -1,0 +1,129 @@
+#pragma kernel CSMain
+
+
+sampler2D _MainTex;
+
+
+Texture2D _CameraDepthTexture;
+Texture3D _VolumeTex;
+
+uniform float voxelCount = 0;
+uniform float4 voxels[1000];
+uniform float4 _camPos;
+uniform float4 _camTL;
+uniform float4 _camTR;
+uniform float4 _camBL;
+uniform float4 _camBR;
+uniform float4x4 _camToWorldMatrix;
+
+RWTexture2D outputTexture;
+
+int textureWidth;
+int textureHeight;
+struct RayMarchResult
+{
+    float density;
+    float4 color;
+};
+
+
+
+// SDF FUCNTIONS
+float opSmoothUnion(float d1, float d2, float k)
+{
+    float h = clamp(0.5 + 0.5 * (d2 - d1) / k, 0.0, 1.0);
+    return lerp(d2, d1, h) - k * h * (1.0 - h);
+}
+float sdSphere(float3 pos, float rad, float3 p)
+{
+    return length(p - pos) - rad;
+}
+float sdBox(float3 pos, float3 b, float3 p)
+{
+    float3 q = abs(pos - p) - b;
+    return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
+
+
+
+// GET SCENES CLOSEST POINT
+float scene(float3 p)
+{
+    float res = 1000000;
+    for (int i = 0; i < min(voxelCount, 200); i++)
+    {
+        res = min(res, sdBox(voxels[i].xyz, voxels[i].www, p));
+    }
+                //res = sdBox(voxels[0].xyz, voxels[0].www, p);
+    return res;
+}
+//CALCULATE DENSITY OF VOLUME FOR THE RAY
+float density(float3 ro, float3 rd)
+{
+    float totalDist = 0.0;
+    float stepDist = 0.05;
+    float3 p = ro;
+    int maxIT = 512;
+    do
+    {
+        p += rd * stepDist;
+        totalDist += stepDist;
+    }
+                while (scene(p) < 0 && maxIT-- > 0);
+    totalDist -= scene(p);
+    int sampleCount = 40;
+    p = ro;
+    float res = 0.0f;
+    float stepLen = totalDist / sampleCount;
+    for (int i = 0; i < sampleCount; i++)
+    {
+        p += rd * stepLen;
+        res += stepLen /** tex3D(_VolumeTex, p * 0.25 + float3(_Time.y * 0.1f, 0, 0)).r*/;
+    }
+    return res;
+}
+
+float raymarchDist(float3 ro, float3 rd, float depth)
+{
+    float t = 0.0;
+    for (int i = 0; i < 512; i++)
+    {
+        if (t >= depth)
+        {
+            return -1;
+        }
+        float3 p = ro + rd * t;
+        float d = scene(p);
+        if (d < 0.001)
+        {
+            return t;
+        }
+        t += d;
+    }
+    return -1;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    // Calculate UV coordinates for ray marching
+    float2 uv = id.xy / float2(textureWidth, textureHeight);
+    
+    // Calculate ray direction
+    float2 screenUV = uv * 2 - 1;
+    float3 rightVec = _camTR.xyz - _camTL.xyz;
+    float3 upVec = _camTL.xyz - _camBL.xyz;
+    float3 rayDir = normalize(screenUV.x * rightVec + screenUV.y * upVec + _camBL.xyz);
+    
+    // Calculate ray origin
+    float3 rayOrigin = _camPos.xyz;
+    
+    // Ray march through the scene
+    float result = raymarchDist(rayOrigin, rayDir, 100.0); // Adjust max distance as needed
+    
+    // Write result to output texture
+    float4 outputColor = float4(result, result, result, 1.0f);
+    outputTexture[id.xy] = outputColor;
+}
+
+
