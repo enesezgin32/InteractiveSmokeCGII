@@ -1,5 +1,6 @@
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 
@@ -8,37 +9,34 @@ public class WorleyNoise3DTexture : MonoBehaviour
 
     public static int worlyNoiseFeaturePointCount2D = 32;
     public static int worlyNoiseFeaturePointCount3D = 16;
-    public static float featurePointMultiplier = 5f;
+    public static float featurePointMultiplier = 7f;
 
-    [MenuItem("CreateExamples2/3DNoiseTexture")]
-    static void CreateTexture3D()
+    public static int size = 64;
+
+    public static Color[] WorleyNoiseTexture3D()
     {
-        // Configure the texture
-        int size = 64;
-        TextureFormat format = TextureFormat.RGBA32;
-        TextureWrapMode wrapMode = TextureWrapMode.Clamp;
-
-        // Create the texture and apply the configuration
-        Texture3D texture = new Texture3D(size, size, size, format, false);
-        texture.wrapMode = wrapMode;
-
-
+        
+        int feature1 = 8;
+        int feature2 = 32;
+        int feature3 = 64;
 
         // Create a 3-dimensional array to store color data
         Color[] colors = new Color[size * size * size];
 
-        //create feature points
-        Vector3[] featurePoints = new Vector3[size * worlyNoiseFeaturePointCount3D];
+        // Create feature points
+        Vector3[] featurePoints1 = new Vector3[size * feature1];
+        Vector3[] featurePoints2 = new Vector3[size * feature2];
+        Vector3[] featurePoints3 = new Vector3[size * feature3];
 
         // Generate feature points
-        for (int i = 0; i < size * worlyNoiseFeaturePointCount3D; i++)
-        {
-            featurePoints[i] = new Vector3(Random.value, Random.value, Random.value);
-        }
+        GenerateFeaturePoints(featurePoints1);
+        GenerateFeaturePoints(featurePoints2);
+        GenerateFeaturePoints(featurePoints3);
 
-        // Populate the array with Worley noise values
+        // Populate the array with Worley noise values using parallel processing
         float inverseResolution = 1.0f / (size - 1.0f);
-        for (int z = 0; z < size; z++)
+
+        Parallel.For(0, size, z =>
         {
             int zOffset = z * size * size;
             for (int y = 0; y < size; y++)
@@ -46,14 +44,40 @@ public class WorleyNoise3DTexture : MonoBehaviour
                 int yOffset = y * size;
                 for (int x = 0; x < size; x++)
                 {
-                    float noiseValue = WorleyNoise(x * inverseResolution, y * inverseResolution, z * inverseResolution, featurePoints);
+                    float noiseValue = WorleyNoise3D(x * inverseResolution, y * inverseResolution, z * inverseResolution, featurePoints3) * 0.3f +
+                                       WorleyNoise3D(x * inverseResolution, y * inverseResolution, z * inverseResolution, featurePoints2) * 0.3f +
+                                       WorleyNoise3D(x * inverseResolution, y * inverseResolution, z * inverseResolution, featurePoints1) * 0.4f;
+
                     colors[x + yOffset + zOffset] = new Color(noiseValue, noiseValue, noiseValue, 1.0f);
                 }
             }
+        });
+
+        return colors;
+    }
+
+    private static void GenerateFeaturePoints(Vector3[] featurePoints)
+    {
+        for (int i = 0; i < featurePoints.Length; i++)
+        {
+            featurePoints[i] = new Vector3(Random.value, Random.value, Random.value);
         }
+    }
 
+    [MenuItem("CreateExamples2/3DNoiseTexture")]
+    static void CreateTexture3D()
+    {
+        // Configure the texture
+        
+        TextureFormat format = TextureFormat.RGBA32;
+        TextureWrapMode wrapMode = TextureWrapMode.Clamp;
 
+        // Create the texture and apply the configuration
+        Texture3D texture = new Texture3D(size, size, size, format, false);
+        texture.wrapMode = wrapMode;
 
+        // Generate the colors using Worley noise
+        Color[] colors = WorleyNoiseTexture3D();
 
         // Copy the color values to the texture
         texture.SetPixels(colors);
@@ -62,12 +86,11 @@ public class WorleyNoise3DTexture : MonoBehaviour
         texture.Apply();
 
         // Save the texture to your Unity Project
-        AssetDatabase.CreateAsset(texture, $"Assets/Textures/Example3DTextureNoise{worlyNoiseFeaturePointCount3D}_{featurePointMultiplier}_2.asset");
+        AssetDatabase.CreateAsset(texture, $"Assets/Textures/Example3DTextureNoise_{featurePointMultiplier}_average.asset");
     }
 
-    static float WorleyNoise(float x, float y, float z, Vector3[] featurePoints)
+    static float WorleyNoise3D(float x, float y, float z, Vector3[] featurePoints)
     {
-
         // Calculate the minimum distance to the feature points
         float minDist = float.MaxValue;
         foreach (var point in featurePoints)
@@ -88,8 +111,6 @@ public class WorleyNoise3DTexture : MonoBehaviour
     [MenuItem("CreateExamples2/2DTexture")]
     static void CreateTexture2D()
     {
-        // Configure the texture
-        int size = 256;
         TextureFormat format = TextureFormat.RGBA32;
         TextureWrapMode wrapMode = TextureWrapMode.Clamp;
 
@@ -119,7 +140,7 @@ public class WorleyNoise3DTexture : MonoBehaviour
         }
 
 
-        colors = WorleyNoiseTexture();
+        colors = WorleyNoiseTexture2D();
 
         // Copy the color values to the texture
         texture.SetPixels(colors);
@@ -162,9 +183,8 @@ public class WorleyNoise3DTexture : MonoBehaviour
     }
 
 
-    public static Color[] WorleyNoiseTexture()
+    public static Color[] WorleyNoiseTexture2D()
     {
-        int size = 256;
         int feature1 = 16;
         int feature2 = 64;
         int feature3 = 256;
@@ -208,4 +228,58 @@ public class WorleyNoise3DTexture : MonoBehaviour
         }
         return colors;
     }
+
+
+    //public static Color[] WorleyNoiseTexture3D()
+    //{
+    //    int size = 256;
+    //    int feature1 = 4;
+    //    int feature2 = 16;
+    //    int feature3 = 32;
+
+    //    // Create a 3-dimensional array to store color data
+    //    Color[] colors = new Color[size * size * size];
+
+    //    //create feature points
+    //    Vector3[] featurePoints1 = new Vector3[size * feature1];
+    //    Vector3[] featurePoints2 = new Vector3[size * feature2];
+    //    Vector3[] featurePoints3 = new Vector3[size * feature3];
+
+    //    // Generate feature points
+    //    for (int i = 0; i < size * feature1; i++)
+    //    {
+    //        featurePoints1[i] = new Vector3(Random.value, Random.value, Random.value);
+    //    }
+    //    for (int i = 0; i < size * feature2; i++)
+    //    {
+    //        featurePoints2[i] = new Vector3(Random.value, Random.value, Random.value);
+    //    }
+    //    for (int i = 0; i < size * feature3; i++)
+    //    {
+    //        featurePoints3[i] = new Vector3(Random.value, Random.value, Random.value);
+    //    }
+
+    //    // Populate the array with Worley noise values
+    //    float inverseResolution = 1.0f / (size - 1.0f);
+    //    for (int z = 0; z < size; z++)
+    //    {
+    //        int zOffset = z * size * size;
+    //        for (int y = 0; y < size; y++)
+    //        {
+    //            int yOffset = y * size;
+    //            for (int x = 0; x < size; x++)
+    //            {
+    //                float noiseValue = WorleyNoise3D(x * inverseResolution, y * inverseResolution, z * inverseResolution, featurePoints3) * 0.3f +
+    //                    WorleyNoise3D(x * inverseResolution, y * inverseResolution, z * inverseResolution, featurePoints2) * 0.3f +
+    //                    WorleyNoise3D(x * inverseResolution, y * inverseResolution, z * inverseResolution, featurePoints1) * 0.4f;
+
+
+    //                colors[x + yOffset] = new Color(noiseValue, noiseValue, noiseValue, 1.0f);
+    //            }
+    //        }
+    //    }
+    //    return colors;
+    //}
+
+
 }
