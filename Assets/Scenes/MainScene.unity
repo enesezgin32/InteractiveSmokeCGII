@@ -1361,8 +1361,8 @@ MonoBehaviour:
   staticObjects: {fileID: 1978897558}
   centerPosition: {x: 0, y: 0, z: 0}
   tempMapVoxelInfo: 
-  smokeRadius: 7
-  maxStepCount: 45
+  smokeRadius: 5
+  maxStepCount: 20
   smokeCenter: {x: 0, y: 0, z: 0}
 --- !u!1 &2082079914
 GameObject:

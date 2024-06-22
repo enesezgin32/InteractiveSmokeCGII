@@ -44,6 +44,7 @@ Shader "Hidden/RaymarchShader"
 
             float voxelSize;
 
+            int maxStepCount;
             
             struct appdata
             {
@@ -166,13 +167,13 @@ Shader "Hidden/RaymarchShader"
                     {
                         // res += stepDist * tex3D(_VolumeTex, p * 0.1 + float3( _Time.y * 0.1f, 0, 0)).r / ((float)voxelStep / 6 + length(p - smokeCenter)20)*20;
 
-                        
-
-                        
-
                         float n = tex3D(_VolumeTex, p * 0.1 + float3( _Time.y * 0.1f, 0, 0)).r;
 
-                        float dist = min(1.0f, length(p-smokeCenter) / smokeRadius);
+                        float distE = min(1.0f, length(p-smokeCenter) / smokeRadius);
+
+                        float distV = min(1.0f,(voxelStep-1)/maxStepCount);
+
+                        float dist = max(distE, distV);
 
                         dist = smoothstep(0.65f, 1.0f, dist);
 

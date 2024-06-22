@@ -79,6 +79,8 @@ public class RaymarchCamera : SceneViewFilter
         RaymarchMaterial.SetVector("centerPosition", _voxelizer.centerPosition);
         RaymarchMaterial.SetFloat("voxelSize", _voxelizer.voxelSize);
         RaymarchMaterial.SetFloat("smokeRadius", _voxelizer.smokeRadius);
+        RaymarchMaterial.SetInt("maxStepCount", _voxelizer.maxStepCount);
+        
         RaymarchMaterial.SetVector("smokeCenter", _voxelizer.smokeCenter);
 
         _voxelizer.tempMapVoxelInfoBuffer.SetData(_voxelizer.tempMapVoxelInfo);
