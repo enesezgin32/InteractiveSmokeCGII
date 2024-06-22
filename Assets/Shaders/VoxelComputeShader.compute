@@ -278,7 +278,7 @@ void CSCreateSmokeVoxels(uint3 id : SV_DispatchThreadID)
         currentVoxel.color = float4(0.2f, 0.2f, 0.2f, 0.5f);
 
         // Mark this voxel as processed
-        tempMapVoxelInfo[currentIndex] = 2;
+        tempMapVoxelInfo[currentIndex] = stepCount;
         smokeVoxels[smokeCount] = currentVoxel;
         smokeCount += 1;
 

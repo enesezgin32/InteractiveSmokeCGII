@@ -160,7 +160,7 @@ Shader "Hidden/RaymarchShader"
                     
                      p += rd * stepDist;
 
-                     if (posToIndex(p) != -1 && tempMapVoxelInfo[posToIndex(p)] == 2)
+                     if (posToIndex(p) != -1 && tempMapVoxelInfo[posToIndex(p)] != 0)
                      {
                         res += stepDist * tex3D(_VolumeTex, p * 0.25 + float3( _Time.y * 0.1f, 0, 0)).r;
                          if(hitDist == -1)

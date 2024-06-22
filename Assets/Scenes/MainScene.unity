@@ -937,7 +937,7 @@ MonoBehaviour:
   worleyNoiseCompute: {fileID: 7200000, guid: 679f5ceee4e6d274cb4c8e9bc0db2a46, type: 3}
   size: 128
   featurePointMultiplier: 10
-  perlinEffect: 0.101
+  perlinEffect: 0.014
 --- !u!4 &1346990290
 Transform:
   m_ObjectHideFlags: 0
