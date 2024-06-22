@@ -1,11 +1,15 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Camera))]
-[ExecuteInEditMode]
+//[ExecuteInEditMode]
 public class RaymarchCamera : SceneViewFilter
 {
     [SerializeField] private Shader _shader;
     [SerializeField] private Texture3D _volumeTexture;
+
+    private Voxelizer _voxelizer;
 
     private Material RaymarchMaterial
     {
@@ -41,6 +45,13 @@ public class RaymarchCamera : SceneViewFilter
     private static readonly int CamPos = Shader.PropertyToID("_camPos");
     private static readonly int CamToWorldMatrix = Shader.PropertyToID("_camToWorldMatrix");
     private static readonly int VolumeTex = Shader.PropertyToID("_VolumeTex");
+    private static readonly int VoxelCount = Shader.PropertyToID("voxelCount");
+    private float startTime;
+    private void Start()
+    {
+        startTime = Time.time;
+        _voxelizer = FindObjectOfType<Voxelizer>();
+    }
 
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
@@ -59,6 +70,21 @@ public class RaymarchCamera : SceneViewFilter
         RaymarchMaterial.SetVector(CamPos, Camera.transform.position);
         RaymarchMaterial.SetMatrix(CamToWorldMatrix, Camera.cameraToWorldMatrix);
         RaymarchMaterial.SetTexture(VolumeTex, _volumeTexture);
+        
+        Vector4[] smokeVoxels = new Vector4[_voxelizer.smokeVoxels.Length];
+        int j = 0;
+        for (int i = 0; i < _voxelizer.smokeVoxels.Length; i++)
+        {
+            var p = _voxelizer.smokeVoxels[i].position;
+            if(p != Vector3.zero)
+                smokeVoxels[j++] = new Vector4(p.x,p.y, p.z, _voxelizer.voxelSize);
+        }
+        if(Time.time - startTime < 10)
+        {
+            RaymarchMaterial.SetFloat(VoxelCount, j);
+            if(j>0)
+                RaymarchMaterial.SetVectorArray("voxels", smokeVoxels);
+        }
         
         //set render target and draw a fullscreen quad
         RenderTexture.active = destination;

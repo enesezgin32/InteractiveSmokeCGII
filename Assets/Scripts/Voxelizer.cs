@@ -41,7 +41,7 @@ public class Voxelizer : MonoBehaviour
     private int smokeArraySize = 20; // -> SMOKE CAPACITY 20*20*20 -> 8000 tane smoke cube yapabiliyoz max
 
     private ComputeBuffer smokeVoxelBuffer;
-    private Voxel[] smokeVoxels;
+    public Voxel[] smokeVoxels;
 
     private ComputeBuffer tempMapVoxelInfoBuffer;
     private int[] tempMapVoxelInfo;
@@ -143,7 +143,7 @@ public class Voxelizer : MonoBehaviour
         //VoxelRenderMaterial.SetBuffer("voxels", voxelBuffer); -> mapi gormek icin yorumdan cikarabilirsin enesim maviler bos kirmizilar static mesh demek
 
         VoxelRenderMaterial.SetFloat("_VoxelSize", voxelSize); // voxel size renderlarken size ayarlasin diye
-        Graphics.DrawMeshInstancedIndirect(voxelMesh, 0, VoxelRenderMaterial, bounds, argsBuffer); // render fonsiyonu
+        //Graphics.DrawMeshInstancedIndirect(voxelMesh, 0, VoxelRenderMaterial, bounds, argsBuffer); // render fonsiyonu
     }
 
     private void InitializeVoxels()

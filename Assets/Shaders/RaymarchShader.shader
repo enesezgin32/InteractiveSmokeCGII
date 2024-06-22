@@ -12,6 +12,8 @@ Shader "Hidden/RaymarchShader"
         Pass
         {
             CGPROGRAM
+// Upgrade NOTE: excluded shader from DX11, OpenGL ES 2.0 because it uses unsized arrays
+#pragma exclude_renderers d3d11 gles
 // Upgrade NOTE: excluded shader from DX11; has structs without semantics (struct v2f members ray)
 #pragma exclude_renderers d3d11
             #pragma vertex vert
@@ -23,6 +25,9 @@ Shader "Hidden/RaymarchShader"
             sampler2D _MainTex;
             sampler2D _CameraDepthTexture;
             sampler3D _VolumeTex;
+
+            uniform float voxelCount = 0;
+            uniform float4 voxels[1000];
             uniform float4 _camPos;
             uniform float4 _camTL;
             uniform float4 _camTR;
@@ -77,9 +82,13 @@ Shader "Hidden/RaymarchShader"
 // GET SCENES CLOSEST POINT
             float scene(float3 p)
             {
-                float x = opSmoothUnion(sdSphere(float3(0, 0, 0), 1, p), sdSphere(float3(0, 1.5, 0), 1, p), 0.7);
-                
-                return opSmoothUnion(x, sdBox(float3(3, 0, 0), float3(1, 1, 1), p), 0.1);
+                float res = 1000000;
+                for(int i=0;i<min(voxelCount, 200);i++)
+                {
+                    res = min(res, sdBox(voxels[i].xyz, voxels[i].www, p));
+                }
+                //res = sdBox(voxels[0].xyz, voxels[0].www, p);
+                return res;
             }
 //CALCULATE DENSITY OF VOLUME FOR THE RAY
             float density(float3 ro, float3 rd)
