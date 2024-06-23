@@ -216,15 +216,40 @@ Shader "Hidden/RaymarchShader"
             }
 
 
-            float bullethole(float3 p)
+            float bullethole(float3 p, float n)
             {
                 float res = 1000000;
                 for(int i = 0; i< bulletCount; i++)
                 {
-                    res = min(res, sdCylinder(p, bulletOrigins[i], bulletOrigins[i] + bulletDirections[i] * 100, bulletSizes[i]));
+                    //res = min(res, sdCylinder(p, bulletOrigins[i], bulletOrigins[i] + bulletDirections[i] * 100, bulletSizes[i]));
+                    
+                    
+                    // float distV = sdCylinder(p, bulletOrigins[i], bulletOrigins[i] + bulletDirections[i] * 100, bulletSizes[i]);
+
+                    // float dist = max(1.0f, distV);
+                    // float n = tex3D(_VolumeTex, p * 0.1 + float3( _Time.y * 0.1f, 0, 0)).r;
+                    // dist = smoothstep(0.65f, 1.0f, dist);
+
+                    // float falloff = min(1.0f, dist + n);
+
+                    float dist = sdCylinder(p, bulletOrigins[i], bulletOrigins[i] + bulletDirections[i] * 100, bulletSizes[i]);
+
+                    if (dist <= 0) 
+                    {                   
+                        dist = min(1.0f, dist * -1  + n*0.4);
+                        res = min(res, (1-smoothstep(0.75f, 1.0f, dist)));
+                    }
+                    else 
+                    {
+                        res = res;   
+                    }
+
+
                 }
-                return res;
+
+                return saturate(res);
             }
+
             float2 density(float3 ro, float3 rd)
             {
                 float res = 0.0f;
@@ -238,11 +263,13 @@ Shader "Hidden/RaymarchShader"
 
                     p += rd * stepDist;
                     int voxelStep = tempMapVoxelInfo[posToIndex(p)];
-                    if (posToIndex(p) != -1 && voxelStep != 0 && bullethole(p) > 0)
+                    float n = tex3D(_VolumeTex, p * 0.1 + float3( _Time.y * 0.1f, 0, 0)).r;
+                    float bulletVal = bullethole(p, n);
+                    if (posToIndex(p) != -1 && voxelStep != 0)
                     {
                         // res += stepDist * tex3D(_VolumeTex, p * 0.1 + float3( _Time.y * 0.1f, 0, 0)).r / ((float)voxelStep / 6 + length(p - smokeCenter)20)*20;
 
-                        float n = tex3D(_VolumeTex, p * 0.1 + float3( _Time.y * 0.1f, 0, 0)).r;
+                        
 
                         float distE = min(1.0f, length(p-smokeCenter) / smokeRadius);
 
@@ -255,7 +282,22 @@ Shader "Hidden/RaymarchShader"
                         float falloff = min(1.0f, dist + n);
 
                         float densitySunVal = densitySun(p, (_sunPos - p)).x;
-                        res += saturate(stepDist * (1 - falloff) * (1-densitySunVal) ); 
+
+
+
+
+                        float additionRes = stepDist * (1 - falloff) * (1-densitySunVal);
+
+                        
+                        if (bulletVal <= 1)
+                        {
+                            additionRes  *= bulletVal;
+                        }
+                        
+                        res += saturate(additionRes); 
+
+
+                        
 
                         if(hitDist == -1)
                             hitDist = totalDist;
