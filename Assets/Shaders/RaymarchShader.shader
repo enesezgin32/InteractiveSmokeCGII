@@ -172,7 +172,30 @@ Shader "Hidden/RaymarchShader"
                 
                 return sign(d)*sqrt(abs(d))/baba;
             }
+            float sdRoundCone( float3 p, float3 a, float3 b, float r1, float r2 )
+            {
+              // sampling independent computations (only depend on shape)
+              float3  ba = b - a;
+              float l2 = dot(ba,ba);
+              float rr = r1 - r2;
+              float a2 = l2 - rr*rr;
+              float il2 = 1.0/l2;
+    
+              // sampling dependant computations
+              float3 pa = p - a;
+              float y = dot(pa,ba);
+              float z = y - l2;
+              float3 xDot = pa * l2 - ba * y;
+              float x2 = dot(xDot, xDot);
+              float y2 = y*y*l2;
+              float z2 = z*z*l2;
 
+              // single square root!
+              float k = sign(rr)*rr*rr*x2;
+              if( sign(z)*a2*z2>k ) return  sqrt(x2 + z2)        *il2 - r2;
+              if( sign(y)*a2*y2<k ) return  sqrt(x2 + y2)        *il2 - r1;
+                                    return (sqrt(x2*a2*il2)+y*rr)*il2 - r1;
+            }
 
             float2 densitySun(float3 ro, float3 rd)
             {
@@ -231,18 +254,31 @@ Shader "Hidden/RaymarchShader"
                     // dist = smoothstep(0.65f, 1.0f, dist);
 
                     // float falloff = min(1.0f, dist + n);
+                    
+                    float3 a = bulletOrigins[i];
+                    float3 b = bulletOrigins[i] + bulletDirections[i] * 15;
 
-                    float dist = sdCylinder(p, bulletOrigins[i], bulletOrigins[i] + bulletDirections[i] * 100, bulletSizes[i]);
+                    float r1 = bulletSizes[i]* 1.2f;
+                    float r2 = bulletSizes[i];
 
-                    if (dist <= 0) 
-                    {                   
-                        dist = min(1.0f, dist * -1  + n*0.4);
-                        res = min(res, (1-smoothstep(0.75f, 1.0f, dist)));
-                    }
-                    else 
-                    {
-                        res = res;   
-                    }
+                    float distance = sdRoundCone(p, a, b, r1, r2);
+
+                    float dist = min(1.0f, distance + n);
+
+
+                    dist = smoothstep(clamp(bulletSizes[i],0.0,0.65), 1.0f, dist);
+
+                    res = min(res, dist);
+
+                    // if (dist <= 0) 
+                    // {                   
+                    //     dist = min(1.0f, dist * -1  + n * 0.4);
+                    //     res = min(res, (1-smoothstep(0.75f, 1.0f, dist)));
+                    // }
+                    // else 
+                    // {
+                    //     res = res;   
+                    // }
 
 
                 }
@@ -254,10 +290,10 @@ Shader "Hidden/RaymarchShader"
             {
                 float res = 0.0f;
                 float totalDist = 0.0;
-                float stepDist = 0.25;
+                float stepDist = 0.075;
                 float hitDist = -1;
                 float3 p = ro;
-                while( totalDist < 30)
+                while( totalDist < 20)
                 {
                     totalDist += stepDist;
 
@@ -273,20 +309,22 @@ Shader "Hidden/RaymarchShader"
 
                         float distE = min(1.0f, length(p-smokeCenter) / smokeRadius);
 
-                        float distV = min(1.0f,(voxelStep)/maxStepCount);
+                        float distV = min(1.0f,(voxelStep)/maxStepCount +5);
+                        float dist;
 
-                        float dist = max(distE, distV);
+                        // if(distV > distE)
+                        //     dist = distE*0.8f + distV * 0.2f;
+                        // else
+                        //     dist = distE;
 
-                        dist = smoothstep(0.65f, 1.0f, dist);
+
+                        dist = smoothstep(0.65f, 1.0f, distE);
 
                         float falloff = min(1.0f, dist + n);
 
                         float densitySunVal = densitySun(p, (_sunPos - p)).x;
 
-
-
-
-                        float additionRes = stepDist * (1 - falloff) * (1-densitySunVal);
+                        float additionRes = stepDist * (1 - falloff) /* * (1-densitySunVal) */;
 
                         
                         if (bulletVal <= 1)

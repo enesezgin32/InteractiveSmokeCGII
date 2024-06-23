@@ -919,9 +919,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d89f67171c19472a96d03bf5689187e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  BulletSize: 1
-  BulletHoleWaitTime: 3
-  BulletHoleFadeOffAnimationTime: 0.7
+  BulletSize: 0.35
+  BulletHoleWaitTime: 2
+  BulletHoleFadeOffAnimationTime: 1
 --- !u!1 &1346990288
 GameObject:
   m_ObjectHideFlags: 0
@@ -1378,8 +1378,8 @@ MonoBehaviour:
   staticObjects: {fileID: 1978897558}
   centerPosition: {x: 0, y: 0, z: 0}
   tempMapVoxelInfo: 
-  smokeRadius: 5
-  maxStepCount: 20
+  smokeRadius: 4
+  maxStepCount: 50
   smokeCenter: {x: 0, y: 0, z: 0}
 --- !u!1 &2082079914
 GameObject:
