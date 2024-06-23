@@ -1378,7 +1378,7 @@ MonoBehaviour:
   staticObjects: {fileID: 1978897558}
   centerPosition: {x: 0, y: 0, z: 0}
   tempMapVoxelInfo: 
-  smokeRadius: 4
+  smokeRadius: 5
   maxStepCount: 30
   smokeCenter: {x: 0, y: 0, z: 0}
 --- !u!1 &2082079914

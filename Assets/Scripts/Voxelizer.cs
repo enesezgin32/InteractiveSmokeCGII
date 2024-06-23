@@ -15,8 +15,8 @@ public class Voxelizer : MonoBehaviour
 
 
     //MAP CONFIGURATION
-    public int gridSize = 10;
-    public float voxelSize = 1f;
+    [HideInInspector] public int gridSize = 10;
+    [HideInInspector] public float voxelSize = 1f;
 
 
     //RENDER ARGS

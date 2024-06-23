@@ -86,6 +86,7 @@ public class TextureCreator : MonoBehaviour
         // Apply the texture and save it as an asset
         texture.Apply();
 
+        //YOU MUST COMMENT THIS BEFORE BUILT
         AssetDatabase.CreateAsset(texture, $"Assets/Textures/WorleyNoiseTexture3D_{size}_{featurePointMultiplier}_{perlinEffect}.asset");
     }
 
