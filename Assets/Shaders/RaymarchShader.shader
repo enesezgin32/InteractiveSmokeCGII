@@ -92,7 +92,7 @@ Shader "Hidden/RaymarchShader"
                 return cord.x + gridSize.x * (cord.y + gridSize.y * cord.z);
             }
 
-            uint posToIndex(float3 position)
+            int posToIndex(float3 position)
             {
 
 
@@ -153,11 +153,54 @@ Shader "Hidden/RaymarchShader"
               return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
             }
 
+
+            float2 densitySun(float3 ro, float3 rd)
+            {
+                float res = 0.0f;
+                float totalDist = 0.0;
+                float stepDist = 0.4;
+                float hitDist = -1;
+                float3 p = ro;
+                while( totalDist < 2)
+                {
+                    totalDist += stepDist;
+
+                    p += rd * stepDist;
+                    int voxelStep = tempMapVoxelInfo[posToIndex(p)];
+                    if (posToIndex(p) != -1 && tempMapVoxelInfo[posToIndex(p)] != 0)
+                    {
+                        // res += stepDist * tex3D(_VolumeTex, p * 0.1 + float3( _Time.y * 0.1f, 0, 0)).r / ((float)voxelStep / 6 + length(p - smokeCenter)20)*20;
+
+                        float n = tex3D(_VolumeTex, p * 0.1 + float3( _Time.y * 0.1f, 0, 0)).r;
+
+                        float distE = min(1.0f, length(p-smokeCenter) / smokeRadius);
+
+                        float distV = min(1.0f,(voxelStep)/maxStepCount);
+
+                        float dist = max(distE, distV);
+
+                        dist = smoothstep(0.65f, 1.0f, dist);
+
+                        float falloff = min(1.0f, dist + n);
+
+                        res += saturate(stepDist * (1 - falloff)) ; 
+
+                        if(hitDist == -1)
+                            hitDist = totalDist;
+                    }
+                }
+
+
+
+                return float2(res, hitDist); 
+            }
+
+
             float2 density(float3 ro, float3 rd)
             {
                 float res = 0.0f;
                 float totalDist = 0.0;
-                float stepDist = 0.1;
+                float stepDist = 0.25;
                 float hitDist = -1;
                 float3 p = ro;
                 while( totalDist < 30)
@@ -182,12 +225,16 @@ Shader "Hidden/RaymarchShader"
 
                         float falloff = min(1.0f, dist + n);
 
-                        res += saturate(stepDist * (1 - falloff)); 
+                        float densitySunVal = densitySun(p, (_sunPos - p)).x;
+                        res += saturate(stepDist * (1 - falloff) * (1-densitySunVal) ); 
 
                         if(hitDist == -1)
                             hitDist = totalDist;
                     }
                 }
+
+
+
                 return float2(res, hitDist); 
             }
 
@@ -202,17 +249,18 @@ Shader "Hidden/RaymarchShader"
                 float2 dens = density(_camPos.xyz , dir);
 
 
-                // Add sun source density calculation
-                float3 dirToSun = normalize(i.nearPlanePoint - _sunPos.xyz);
-                float2 densToSun = density(_sunPos.xyz, dirToSun);
-
-
                 if(dens.y == -1 || dens.y > depth)
                     return res;
 
-                dens.x  = dens.x * (1-densToSun.x);
-                float ABSORPTION = 1;
-                return lerp(res * exp(-dens.x * ABSORPTION), _sunColor *0.5f + fixed4(0,0.5f,0.0,0.0), 1 - exp(-dens.x * ABSORPTION));
+                
+                
+
+                float rayleighFactor = 5.5;
+                float ABSORPTION = 0.6f;
+                
+                float totalScattering = ABSORPTION + rayleighFactor;
+
+                return lerp(res * exp(-dens.x * (totalScattering)), _sunColor *0.5f + fixed4(0,0.5f,0.0,0.0), 1 - exp(-dens.x * (totalScattering)));
             }
             ENDCG
         }
