@@ -37,6 +37,9 @@ Shader "Hidden/RaymarchShader"
             uniform float4 _camBR;
             uniform float4x4 _camToWorldMatrix;
 
+            float3 _sunPos;
+            float4 _sunColor;
+
             float3 gridSize;
             float3 centerPosition;
             float3 smokeCenter;
@@ -154,7 +157,7 @@ Shader "Hidden/RaymarchShader"
             {
                 float res = 0.0f;
                 float totalDist = 0.0;
-                float stepDist = 0.025;
+                float stepDist = 0.1;
                 float hitDist = -1;
                 float3 p = ro;
                 while( totalDist < 30)
@@ -171,7 +174,7 @@ Shader "Hidden/RaymarchShader"
 
                         float distE = min(1.0f, length(p-smokeCenter) / smokeRadius);
 
-                        float distV = min(1.0f,(voxelStep-1)/maxStepCount);
+                        float distV = min(1.0f,(voxelStep)/maxStepCount);
 
                         float dist = max(distE, distV);
 
@@ -197,10 +200,19 @@ Shader "Hidden/RaymarchShader"
                 float3 dir = normalize(i.nearPlanePoint - _camPos.xyz);
                 
                 float2 dens = density(_camPos.xyz , dir);
+
+
+                // Add sun source density calculation
+                float3 dirToSun = normalize(i.nearPlanePoint - _sunPos.xyz);
+                float2 densToSun = density(_sunPos.xyz, dirToSun);
+
+
                 if(dens.y == -1 || dens.y > depth)
                     return res;
+
+                dens.x  = dens.x * (1-densToSun.x);
                 float ABSORPTION = 1;
-                return lerp(res * exp(-dens.x * ABSORPTION), fixed4(0, 1,0 , 1), 1 - exp(-dens.x * ABSORPTION));
+                return lerp(res * exp(-dens.x * ABSORPTION), _sunColor *0.5f + fixed4(0,0.5f,0.0,0.0), 1 - exp(-dens.x * ABSORPTION));
             }
             ENDCG
         }

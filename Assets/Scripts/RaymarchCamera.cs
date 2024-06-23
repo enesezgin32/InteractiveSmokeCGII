@@ -11,6 +11,9 @@ public class RaymarchCamera : SceneViewFilter
 
     private Voxelizer _voxelizer;
 
+    private Light sun;
+    private Vector3 sunPos;
+
     private Material RaymarchMaterial
     {
         get
@@ -52,6 +55,9 @@ public class RaymarchCamera : SceneViewFilter
     private float startTime;
     private void Start()
     {
+        sun = FindObjectOfType<Light>();
+
+
         startTime = Time.time;
         _voxelizer = FindObjectOfType<Voxelizer>();
     }
@@ -80,7 +86,10 @@ public class RaymarchCamera : SceneViewFilter
         RaymarchMaterial.SetFloat("voxelSize", _voxelizer.voxelSize);
         RaymarchMaterial.SetFloat("smokeRadius", _voxelizer.smokeRadius);
         RaymarchMaterial.SetInt("maxStepCount", _voxelizer.maxStepCount);
-        
+
+        RaymarchMaterial.SetVector("_sunPos", sun.transform.position);
+        RaymarchMaterial.SetVector("_sunColor", sun.color);
+
         RaymarchMaterial.SetVector("smokeCenter", _voxelizer.smokeCenter);
 
         _voxelizer.tempMapVoxelInfoBuffer.SetData(_voxelizer.tempMapVoxelInfo);
