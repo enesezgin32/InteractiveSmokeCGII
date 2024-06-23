@@ -14,6 +14,7 @@ public class RaymarchCamera : SceneViewFilter
     private Light sun;
     private Vector3 sunPos;
 
+    public Gun _gun;
     private Material RaymarchMaterial
     {
         get
@@ -50,16 +51,19 @@ public class RaymarchCamera : SceneViewFilter
     private static readonly int VolumeTex = Shader.PropertyToID("_VolumeTex");
     private static readonly int VoxelCount = Shader.PropertyToID("voxelCount");
 
-
-
-    private float startTime;
-    private void Start()
+    
+    private void Awake()
     {
         sun = FindObjectOfType<Light>();
-
-
-        startTime = Time.time;
         _voxelizer = FindObjectOfType<Voxelizer>();
+    }
+
+    private void Start()
+    {
+        RaymarchMaterial.SetInteger("bulletCount", 0);
+        RaymarchMaterial.SetVectorArray("bulletOrigins", new Vector4[100]);
+        RaymarchMaterial.SetVectorArray("bulletDirections", new Vector4[100]);
+        RaymarchMaterial.SetFloatArray("bulletSizes", new float[100]);
     }
 
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
@@ -94,7 +98,14 @@ public class RaymarchCamera : SceneViewFilter
 
         _voxelizer.tempMapVoxelInfoBuffer.SetData(_voxelizer.tempMapVoxelInfo);
         RaymarchMaterial.SetBuffer("tempMapVoxelInfo", _voxelizer.tempMapVoxelInfoBuffer);
-
+        
+        RaymarchMaterial.SetInteger("bulletCount", _gun.BulletHoleCount);
+        if (_gun.BulletHoleCount > 0)
+        {
+            RaymarchMaterial.SetVectorArray("bulletOrigins", _gun.GetOrigins());
+            RaymarchMaterial.SetVectorArray("bulletDirections", _gun.GetDirections());
+            RaymarchMaterial.SetFloatArray("bulletSizes", _gun.GetSizes());
+        }
         //int countOfTwos = 0;
         //foreach (int value in _voxelizer.tempMapVoxelInfo)
         //{

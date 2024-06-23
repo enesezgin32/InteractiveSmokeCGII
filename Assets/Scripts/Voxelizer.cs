@@ -172,7 +172,7 @@ public class Voxelizer : MonoBehaviour
         //compute shaderda smoke genislerken eski smoke olan yerleri isaretlemek icin temp map arrayi
         tempMapVoxelInfo = new int[gridSize * gridSize * gridSize];
         tempMapVoxelInfoBuffer = new ComputeBuffer(tempMapVoxelInfo.Length, sizeof(int));
-
+        
         //breadth first search icin recursion yerine queue ile yaptim shaderda array size yememek icin kullanacagi queueyu ben gonderiyom
         queueFill = new Vector4[5000]; // queue icin yeterli gibi allaha emanet
         queueFillBuffer = new ComputeBuffer(queueFill.Length, sizeof(int) * 4);
