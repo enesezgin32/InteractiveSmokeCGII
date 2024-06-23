@@ -204,7 +204,7 @@ Shader "Hidden/RaymarchShader"
                 float stepDist = 0.4;
                 float hitDist = -1;
                 float3 p = ro;
-                while( totalDist < 2)
+                while( totalDist < 10)
                 {
                     totalDist += stepDist;
 
@@ -222,9 +222,9 @@ Shader "Hidden/RaymarchShader"
 
                         float dist = max(distE, distV);
 
-                        dist = smoothstep(0.65f, 1.0f, dist);
+                        dist = smoothstep(0.45f, 0.75f, dist);
 
-                        float falloff = min(1.0f, dist + n);
+                        float falloff = min(1.0f, dist);
 
                         res += saturate(stepDist * (1 - falloff)) ; 
 
@@ -256,10 +256,10 @@ Shader "Hidden/RaymarchShader"
                     // float falloff = min(1.0f, dist + n);
                     
                     float3 a = bulletOrigins[i];
-                    float3 b = bulletOrigins[i] + bulletDirections[i] * 15;
+                    float3 b = bulletOrigins[i] + bulletDirections[i] * 20;
 
-                    float r1 = bulletSizes[i]* 1.2f;
-                    float r2 = bulletSizes[i];
+                    float r1 = bulletSizes[i];
+                    float r2 = bulletSizes[i] * 0.01f;
 
                     float distance = sdRoundCone(p, a, b, r1, r2);
 
@@ -286,9 +286,10 @@ Shader "Hidden/RaymarchShader"
                 return saturate(res);
             }
 
-            float2 density(float3 ro, float3 rd)
+            float3 density(float3 ro, float3 rd)
             {
                 float res = 0.0f;
+                float sunDes = 1.0f;
                 float totalDist = 0.0;
                 float stepDist = 0.075;
                 float hitDist = -1;
@@ -322,19 +323,17 @@ Shader "Hidden/RaymarchShader"
 
                         float falloff = min(1.0f, dist + n);
 
-                        float densitySunVal = densitySun(p, (_sunPos - p)).x;
-
                         float additionRes = stepDist * (1 - falloff) /* * (1-densitySunVal) */;
 
                         
                         if (bulletVal <= 1)
                         {
-                            additionRes  *= bulletVal;
+                            additionRes  *= bulletVal; 
                         }
                         
                         res += saturate(additionRes); 
 
-
+                        sunDes -= densitySun(p, (_sunPos - p)).x;
                         
 
                         if(hitDist == -1)
@@ -344,7 +343,7 @@ Shader "Hidden/RaymarchShader"
 
 
 
-                return float2(res, hitDist); 
+                return float3(res, hitDist, saturate(sunDes)); 
             }
 
             fixed4 frag (v2f i) : SV_Target
@@ -355,7 +354,7 @@ Shader "Hidden/RaymarchShader"
                 
                 float3 dir = normalize(i.nearPlanePoint - _camPos.xyz);
                 
-                float2 dens = density(_camPos.xyz , dir);
+                float3 dens = density(_camPos.xyz , dir);
 
 
                 if(dens.y == -1 || dens.y > depth)
@@ -369,7 +368,14 @@ Shader "Hidden/RaymarchShader"
                 
                 float totalScattering = ABSORPTION + rayleighFactor;
 
-                return lerp(res * exp(-dens.x * (totalScattering)), _sunColor *0.5f + fixed4(0,0.5f,0.0,0.0), 1 - exp(-dens.x * (totalScattering)));
+                float4 color1 = lerp(res,fixed4(0,0.2f,0.0,1.0), 1 - exp(-dens.x * (totalScattering)));
+
+
+                return color1 + fixed4(0,1.0,0.0,1.0) * 0.1f * dens.z * dens.x;
+
+
+                    
+
             }
             ENDCG
         }
